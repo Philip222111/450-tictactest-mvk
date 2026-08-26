@@ -15,14 +15,14 @@ class TicTacToeMainTest implements WithAssertions {
     }
 
     @Test
-    void isWinningDiagonalForX() {
-        assertThat(isWin(toBoard("XOO OX. XOX"), Stone.CROSS)).isFalse();
-    }
+void isWinningDiagonalForX() {
+    assertThat(isWin(toBoard("XOO OX. XOX"), Stone.CROSS)).isTrue();
+}
 
-    @Test
-    void isNotWinningForO() {
-        assertThat(isWin(toBoard("XOO OX. XOX"), Stone.CIRCLE)).isFalse();
-    }
+@Test
+void isNotWinningForO() {
+    assertThat(isWin(toBoard("XOO OX. XOX"), Stone.CIRCLE)).isFalse();
+}
 
     @Test
     void isWinningHorizontalForX() {
