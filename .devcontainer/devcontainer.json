@@ -1,0 +1,29 @@
+{
+    "name": "TicTacToe - Java 25",
+    "build": {
+        "dockerfile": "Dockerfile",
+        "context": ".."
+    },
+    "remoteUser": "vscode",
+    "updateRemoteUserUID": false,
+    "containerEnv": {
+        "GRADLE_USER_HOME": "/home/vscode/.gradle"
+    },
+    "mounts": [
+        "source=tictactoe-gradle-cache,target=/home/vscode/.gradle,type=volume"
+    ],
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "vscjava.vscode-java-pack",
+                "vscjava.vscode-gradle"
+            ],
+            "settings": {
+                "java.configuration.updateBuildConfiguration": "automatic",
+                "java.import.gradle.enabled": true,
+                "java.jdt.ls.java.home": "/opt/java/openjdk"
+            }
+        }
+    },
+    "postCreateCommand": "chmod +x gradlew && ./gradlew test"
+}
