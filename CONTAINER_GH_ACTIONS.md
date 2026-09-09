@@ -76,6 +76,8 @@ Zum Download verwendet der Job `github.actor` und den automatisch bereitgestellt
 
 Push und Pull Request lösen den Workflow aus; zusätzlich ist ein manueller Start konfiguriert. Vorhandene Testberichte werden als Artefakt `test-results` hochgeladen. Der Workflow selbst baut und veröffentlicht kein Image.
 
+Für spätere Image-Aktualisierungen gibt es zusätzlich den separaten [Build-und-Push-Workflow](CONTAINER_BUILD_WORKFLOW.md). Dieser benötigt Package-Schreibrechte und veröffentlicht das Image mit vorgefertigten Docker-Actions.
+
 **Reihenfolge:** Image bauen, testen und hochladen, Package-Zugriff prüfen, danach die vorbereiteten Git-Änderungen gemeinsam committen und den Branch pushen. Ohne verfügbares Image scheitert der Job bereits beim Container-Start.
 
 ## 5. Abgabenachweise
