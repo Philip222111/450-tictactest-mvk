@@ -4,7 +4,7 @@
 
 Auf dem gepushten Branch `task/ghcr-container-ci` sind das CI-Dockerfile und die Verwendung von `ghcr.io/philip222111/450-tictactest-mvk:latest` im Workflow umgesetzt.
 
-**Stand 9. September 2026:** Das CI-Image wurde manuell für `linux/amd64` gebaut, mit `latest` getaggt und erfolgreich nach GHCR hochgeladen. Der anschliessende authentifizierte `docker pull` war erfolgreich. Der erste Actions-Lauf scheitert beim Download des privaten Packages mit `denied`; unter **Package settings → Manage Actions access** muss das Repository Leserechte erhalten.
+**Abgeschlossen am 9. September 2026:** Das CI-Image wurde manuell für `linux/amd64` gebaut, mit `latest` getaggt und erfolgreich nach GHCR hochgeladen. Der anschliessende authentifizierte `docker pull` war erfolgreich. Nach Vergabe der Package-Leserechte an das Repository ist auch der [Actions-Lauf](https://github.com/Philip222111/450-tictactest-mvk/actions/runs/34343894748) erfolgreich: Container-Start, Checkout, Java-Prüfung, Build mit Tests und Upload der Testberichte.
 
 Veröffentlichter und durch Pull bestätigter Digest: `sha256:698aac8baa7536a30fad89cf3f6288b74460a0b41bb15d31dc3e7fcefd3c2b1c`.
 
@@ -97,4 +97,5 @@ Am 9. September 2026 bestätigt:
 - GHCR-Push und anschliessender Pull nach Anmeldung mit PAT (classic) erfolgreich; Digest siehe oben.
 - [Veröffentlichtes Package](https://github.com/users/Philip222111/packages/container/package/450-tictactest-mvk), Tag `latest`.
 - Branch mit Commit `9c3668c` gepusht.
-- [Erster Actions-Lauf](https://github.com/Philip222111/450-tictactest-mvk/actions/runs/34343409198): Download mit `GITHUB_TOKEN` wegen fehlendem Package-Zugriff abgelehnt. Erfolgreicher CI-Nachweis noch offen.
+- [Erster Actions-Lauf](https://github.com/Philip222111/450-tictactest-mvk/actions/runs/34343409198): Download mit `GITHUB_TOKEN` wegen fehlendem Package-Zugriff abgelehnt; anschliessend unter **Manage Actions access** behoben.
+- [Erfolgreicher Actions-Lauf](https://github.com/Philip222111/450-tictactest-mvk/actions/runs/34343894748) für Commit `ad38f12`: alle Job-Schritte erfolgreich, einschliesslich GHCR-Download, Projekt-Build und Testbericht-Upload als `test-results`.

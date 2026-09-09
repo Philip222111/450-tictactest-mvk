@@ -32,7 +32,7 @@ Ein erfolgreicher Login und ein erfolgreicher Image-Upload sind getrennte Nachwe
 
 Das lokale Image `ghcr.io/philip222111/450-tictactest-mvk:latest` existiert. Seine bei der Prüfung ausgegebene ID lautet `sha256:698aac8baa7536a30fad89cf3f6288b74460a0b41bb15d31dc3e7fcefd3c2b1c`. Der bereits dokumentierte Container-Testlauf war erfolgreich: 12 Tests ohne Fehler. Die vorbereitete CI-Konfiguration liegt im lokalen Commit `9c3668c` auf `task/ghcr-container-ci`.
 
-Die Anmeldung mit PAT (classic) ist inzwischen erfolgreich. Upload, anschliessender Pull und Branch-Push sind abgeschlossen. Der erste Actions-Lauf scheitert am separaten Package-Zugriff des Repository-Tokens. Unter **Package settings → Manage Actions access** muss `450-tictactest-mvk` mit **Read** hinzugefügt werden. Den aktuellen Abschlussstand und die Nachweise enthält [CONTAINER_GH_ACTIONS.md](CONTAINER_GH_ACTIONS.md).
+Die Anmeldung mit PAT (classic) ist inzwischen erfolgreich. Upload, anschliessender Pull und Branch-Push sind abgeschlossen. Der separate Package-Zugriff des Repository-Tokens wurde unter **Package settings → Manage Actions access** durch Hinzufügen von `450-tictactest-mvk` mit **Read** eingerichtet. Der [Actions-Lauf](https://github.com/Philip222111/450-tictactest-mvk/actions/runs/34343894748) ist erfolgreich. Den Abschlussstand und die Nachweise enthält [CONTAINER_GH_ACTIONS.md](CONTAINER_GH_ACTIONS.md).
 
 ## Quellen
 

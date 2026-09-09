@@ -42,7 +42,7 @@ Der Build bleibt ein manueller Terminal-Aufruf. Upload und Package-Zugriff sind 
 
 ## Grenzen der Verifikation
 
-Am 9. September 2026 wurde der Docker-Zugriff aus dem Devcontainer bestätigt: `docker version` meldet Client und Docker-Desktop-Server. Der manuelle Image-Build und der Projekt-Build im CI-Container sind erfolgreich; alle 12 Tests bestehen. GHCR-Upload und lokaler Pull sind nach erfolgreicher Anmeldung ebenfalls bestätigt. Der erste Actions-Lauf benötigt noch Package-Leserechte für das Repository; siehe [CONTAINER_GH_ACTIONS.md](CONTAINER_GH_ACTIONS.md).
+Am 9. September 2026 wurde der Docker-Zugriff aus dem Devcontainer bestätigt: `docker version` meldet Client und Docker-Desktop-Server. Der manuelle Image-Build und der Projekt-Build im CI-Container sind erfolgreich; alle 12 Tests bestehen. GHCR-Upload und lokaler Pull sind nach erfolgreicher Anmeldung ebenfalls bestätigt. Nach Vergabe der Package-Leserechte ist auch der Actions-Lauf erfolgreich; siehe [CONTAINER_GH_ACTIONS.md](CONTAINER_GH_ACTIONS.md).
 
 Bei späteren `docker run`-Befehlen mit Bind-Mounts gilt: Der externe Docker-Daemon interpretiert Quellpfade auf dem Host. Ein Containerpfad wie `/workspaces/...` lässt sich deshalb nicht ohne Weiteres als Hostpfad verwenden. Das Feature dokumentiert diese Einschränkung ausdrücklich.[^1] Der oben gezeigte Build überträgt seinen Build-Kontext und benötigt keinen solchen Workspace-Bind-Mount.
 
