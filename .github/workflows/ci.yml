@@ -7,26 +7,40 @@ on:
   pull_request:
     branches:
       - '**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: read
 
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/philip222111/450-tictactest-mvk:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    defaults:
+      run:
+        shell: bash
 
     steps:
       - name: Repository auschecken
         uses: actions/checkout@v4
 
-      - name: Java 17 einrichten
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-
-      - name: Gradle einrichten
-        uses: gradle/actions/setup-gradle@v4
-
-      - name: Gradle Wrapper ausführbar machen
-        run: chmod +x gradlew
+      - name: Java im Container prüfen
+        run: java -version
 
       - name: Projekt bauen und Tests ausführen
-        run: ./gradlew build
+        run: bash gradlew --no-daemon -Dorg.gradle.java.installations.paths="$JAVA_HOME" build
+
+      - name: Testberichte bereitstellen
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: |
+            build/reports/tests/test/
+            build/test-results/test/
+          if-no-files-found: ignore
