@@ -2,31 +2,130 @@ name: TicTacToe CI
 
 on:
   push:
-    branches:
-      - '**'
+    branches-ignore:
+      - coverage-history
   pull_request:
     branches:
       - '**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: read
 
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/philip222111/450-tictactest-mvk:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    defaults:
+      run:
+        shell: bash
 
     steps:
       - name: Repository auschecken
         uses: actions/checkout@v4
 
-      - name: Java 17 einrichten
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-
-      - name: Gradle einrichten
-        uses: gradle/actions/setup-gradle@v4
-
-      - name: Gradle Wrapper ausführbar machen
-        run: chmod +x gradlew
+      - name: Java im Container prüfen
+        run: java -version
 
       - name: Projekt bauen und Tests ausführen
-        run: ./gradlew build
+        run: bash gradlew --no-daemon -Dorg.gradle.java.installations.paths="$JAVA_HOME" build
+
+      - name: Testberichte bereitstellen
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: |
+            build/reports/tests/test/
+            build/test-results/test/
+          if-no-files-found: ignore
+
+      - name: JaCoCo-Bericht bereitstellen
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report
+          path: build/reports/jacoco/test/
+          if-no-files-found: error
+
+  coverage-pages:
+    needs: build-and-test
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+    concurrency:
+      group: coverage-pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Historienverarbeitung prüfen
+        run: python -m unittest discover -s scripts -p 'test_*.py'
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: jacoco-report
+          path: coverage-report
+
+      - name: Bestehende Historie laden
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Ein Netzwerkfehler darf nicht als leere Historie behandelt werden.
+          remote_ref=$(git ls-remote --heads origin coverage-history)
+          if [[ -n "$remote_ref" ]]; then
+            git fetch origin coverage-history
+            git worktree add build/coverage-site FETCH_HEAD
+          else
+            mkdir -p build/coverage-site
+            git -C build/coverage-site init -b coverage-history
+          fi
+
+      - name: Messwert ergänzen und Diagramme erzeugen
+        env:
+          COVERAGE_COMMIT: ${{ github.sha }}
+          COVERAGE_RUN: ${{ github.run_id }}
+        run: |
+          python scripts/coverage_history.py coverage-report/jacocoTestReport.xml build/coverage-site
+          rm -rf build/coverage-site/report
+          cp -r coverage-report/html build/coverage-site/report
+
+      - name: Historie dauerhaft speichern
+        shell: bash
+        run: |
+          set -euo pipefail
+          git -C build/coverage-site config user.name 'github-actions[bot]'
+          git -C build/coverage-site config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git -C build/coverage-site add coverage-history report index.html
+          if ! git -C build/coverage-site diff --cached --quiet; then
+            git -C build/coverage-site commit -m "Update coverage history"
+          fi
+          # Push aus dem authentifizierten Checkout, auch beim ersten Lauf.
+          history_commit=$(git -C build/coverage-site rev-parse HEAD)
+          git fetch ./build/coverage-site HEAD
+          git push origin "$history_commit:refs/heads/coverage-history"
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/coverage-site
+
+      - name: Auf GitHub Pages veröffentlichen
+        id: deployment
+        uses: actions/deploy-pages@v4
