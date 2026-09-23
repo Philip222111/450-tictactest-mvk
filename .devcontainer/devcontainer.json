@@ -25,5 +25,5 @@
             }
         }
     },
-    "postCreateCommand": "chmod +x gradlew && ./gradlew test"
+    "postCreateCommand": "chmod +x gradlew && ./gradlew --no-daemon build"
 }
