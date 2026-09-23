@@ -10,7 +10,8 @@ import xml.etree.ElementTree as ET
 
 
 def read_coverage(report):
-    # Only report-level counters: nested class/package counters would double count.
+    """Liest die aggregierte Instruction- und Branch-Coverage aus JaCoCo-XML."""
+    # Nur Zähler direkt unter <report> verwenden; Paket-/Klassenzähler wären doppelt.
     counters = {c.attrib['type']: c.attrib for c in ET.parse(report).getroot().findall('counter')}
     result = {}
     for metric in ('INSTRUCTION', 'BRANCH'):
@@ -23,16 +24,21 @@ def read_coverage(report):
 
 
 def chart(history, metric, title):
+    """Erzeugt ein eigenständiges SVG-Liniendiagramm für eine Coverage-Metrik."""
+    # Bei vielen Messpunkten wächst die Zeichenfläche und bleibt horizontal scrollbar.
     width = max(760, 75 * len(history))
     elements = [f'<h2>{title}</h2><div class="chart"><svg role="img" aria-label="{title}" viewBox="0 0 {width} 300" style="min-width:{width}px">']
     for value in range(0, 101, 20):
+        # Feste Hilfslinien von 0 bis 100 Prozent erleichtern den Vergleich.
         y = 250 - value * 2
         elements.append(f'<path d="M50 {y} H{width-20}" stroke="#ddd"/><text x="5" y="{y+5}">{value}%</text>')
     segment = []
     for i, point in enumerate(history):
+        # Die x-Position verteilt alle Commits gleichmäßig über die Zeichenfläche.
         x = 65 + i * (width - 100) / max(1, len(history) - 1)
         value = point[metric]
         if value is None:
+            # Fehlende Branch-Werte unterbrechen die Linie, statt 0 % vorzutäuschen.
             if segment:
                 elements.append(f'<polyline points="{" ".join(segment)}" fill="none" stroke="#159947" stroke-width="3"/>')
             segment = []
@@ -48,17 +54,22 @@ def chart(history, metric, title):
 
 
 def update(report, output):
+    """Ergänzt die Historie und schreibt JSON, Diagramme sowie die HTML-Seite."""
+    # Alle dauerhaft veröffentlichten Dateien liegen unter coverage-history/.
     directory = output / 'coverage-history'
     directory.mkdir(parents=True, exist_ok=True)
     data_file = directory / 'history.json'
+    # Eine vorhandene Historie wird vollständig übernommen und nicht neu initialisiert.
     history = json.loads(data_file.read_text()) if data_file.exists() else []
     commit = os.environ['COVERAGE_COMMIT']
-    # A rerun of the same commit must not create a second measurement.
+    # Ein erneuter Lauf desselben Commits darf keinen zweiten Messpunkt erzeugen.
     if not any(point['commit'] == commit for point in history):
         history.append(dict(date=datetime.now(timezone.utc).isoformat(), commit=commit,
                             run_id=int(os.environ['COVERAGE_RUN']), **read_coverage(report)))
     history.sort(key=lambda point: point['run_id'])
     data_file.write_text(json.dumps(history, indent=2) + '\n')
+
+    # Neueste Messwerte stehen in der Tabelle oben; Diagramme bleiben chronologisch.
     rows = ''.join('<tr>' + ''.join(f'<td>{escape(str(value))}</td>' for value in (
         p['date'], p['commit'][:7], f'{p["instruction"]}%',
         'n/a' if p['branch'] is None else f'{p["branch"]}%')) + '</tr>' for p in reversed(history))
@@ -75,9 +86,12 @@ Ohne Branches: n/a. Details eines Messpunkts erscheinen beim Berühren mit der M
     page += chart(history, 'instruction', 'Instruction coverage')
     page += chart(history, 'branch', 'Branch coverage')
     page += '<h2>Messwerte</h2><div class="chart"><table><tr><th>Datum (UTC)</th><th>Commit</th><th>Instruction</th><th>Branch</th></tr>' + rows + '</table></div></html>'
+
+    # Die Detailseite enthält Diagramme und Tabelle; die Root-Seite leitet dorthin um.
     (directory / 'index.html').write_text(page)
     (output / 'index.html').write_text('<!doctype html><html lang="de"><meta charset="utf-8"><title>Coverage</title><meta http-equiv="refresh" content="0;url=coverage-history/index.html"><a href="coverage-history/index.html">Coverage-Verlauf</a></html>')
 
 
 if __name__ == '__main__':
+    # Kommandozeilenargumente: JaCoCo-XML und Zielverzeichnis der statischen Website.
     update(Path(sys.argv[1]), Path(sys.argv[2]))

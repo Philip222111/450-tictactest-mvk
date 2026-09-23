@@ -1,33 +1,40 @@
+// Aktiviert die Java-Kompilierung und die Messung der Testabdeckung.
 plugins {
     id 'java'
     id 'jacoco'
 }
 
+// Verwendet für Build und Tests unabhängig vom Hostsystem Java 25.
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(25)
     }
 }
 
+// Lädt die Testbibliotheken aus dem zentralen Maven-Repository.
 repositories {
     mavenCentral()
 }
 
+// JUnit führt die Tests aus; AssertJ stellt lesbare Assertions bereit.
 dependencies {
     testImplementation 'org.assertj:assertj-core:3.27.7'
     testImplementation 'org.junit.jupiter:junit-jupiter:6.1.3'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
+// Startet JUnit Jupiter und erzeugt nach jedem Testlauf den Coverage-Bericht.
 test {
     useJUnitPlatform()
     finalizedBy jacocoTestReport
 }
 
+// Fixiert die JaCoCo-Version, damit lokale und CI-Berichte reproduzierbar sind.
 jacoco {
     toolVersion = '0.8.15'
 }
 
+// Erzeugt sowohl den HTML-Bericht für Menschen als auch XML für die CI-Zeitreihe.
 jacocoTestReport {
     dependsOn test
     reports {

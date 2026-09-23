@@ -13,6 +13,7 @@ import ch.bbw.m450.tictactoe.players.GreedyPlayer;
 
 class TicTacToePlayerTest implements WithAssertions {
 
+    // Der zustandslose GreedyPlayer kann für alle Testfälle wiederverwendet werden.
     private final GreedyPlayer greedyPlayer = new GreedyPlayer();
 
     @ParameterizedTest(name = "{0} -> first free field {1}")
@@ -22,11 +23,13 @@ class TicTacToePlayerTest implements WithAssertions {
             "XOXOXOXO., 8"
     })
     void greedyPlayerChoosesTheFirstFreeField(String representation, int expectedPosition) {
+        // Jeder CSV-Datensatz prüft eine andere Position des ersten freien Felds.
         assertThat(greedyPlayer.play(board(representation), CROSS)).isEqualTo(expectedPosition);
     }
 
     @Test
     void greedyPlayerRejectsAFullBoard() {
+        // Ohne freies Feld muss der Spieler den unmöglichen Zug ausdrücklich melden.
         assertThatIllegalStateException()
                 .isThrownBy(() -> greedyPlayer.play(board("XOXOOXXXO"), CIRCLE))
                 .withMessage("cannot play at all");
@@ -34,11 +37,13 @@ class TicTacToePlayerTest implements WithAssertions {
 
     @Test
     void stonesReturnTheirOpponent() {
+        // Die Gegenrichtung wird mitgeprüft, damit die Zuordnung symmetrisch bleibt.
         assertThat(CROSS.opponent()).isEqualTo(CIRCLE);
         assertThat(CIRCLE.opponent()).isEqualTo(CROSS);
     }
 
     private static Stone[] board(String representation) {
+        // Die kompakte Zeichenfolge macht Testdaten leichter lesbar als Array-Literale.
         var board = new Stone[TicTacToeMain.BOARD_SIZE];
         for (var i = 0; i < representation.length(); i++) {
             board[i] = switch (representation.charAt(i)) {
