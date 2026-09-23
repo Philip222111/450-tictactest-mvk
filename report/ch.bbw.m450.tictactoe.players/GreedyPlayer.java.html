@@ -10,12 +10,14 @@ import ch.bbw.m450.tictactoe.TicTacToePlayer;
 
 	@Override
 	public int play(Stone[] board, Stone colorToPlay) {
-<span class="fc bfc" id="L13" title="All 2 branches covered.">		for (var i = 0; i &lt; TicTacToeMain.BOARD_SIZE; i++) {</span>
-<span class="fc bfc" id="L14" title="All 2 branches covered.">			if (board[i] == null) {</span>
-<span class="fc" id="L15">				return i;</span>
+		// Die aufsteigende Suche liefert immer das erste freie Feld von links oben.
+<span class="fc bfc" id="L14" title="All 2 branches covered.">		for (var i = 0; i &lt; TicTacToeMain.BOARD_SIZE; i++) {</span>
+<span class="fc bfc" id="L15" title="All 2 branches covered.">			if (board[i] == null) {</span>
+<span class="fc" id="L16">				return i;</span>
 			}
 		}
-<span class="fc" id="L18">		throw new IllegalStateException(&quot;cannot play at all&quot;);</span>
+		// Ein voller Spielstand besitzt keine gültige Position mehr.
+<span class="fc" id="L20">		throw new IllegalStateException(&quot;cannot play at all&quot;);</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

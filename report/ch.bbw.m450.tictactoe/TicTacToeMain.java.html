@@ -13,9 +13,10 @@ import ch.bbw.m450.tictactoe.players.HumanPlayer;
 
 	public static final int BOARD_SIZE = 9;
 
+	/** Startet ein Spiel Mensch gegen den einfachen Computergegner. */
 	public static void main(String[] args) {
-<span class="nc" id="L17">		play(new HumanPlayer(), new GreedyPlayer());</span>
-<span class="nc" id="L18">	}</span>
+<span class="nc" id="L18">		play(new HumanPlayer(), new GreedyPlayer());</span>
+<span class="nc" id="L19">	}</span>
 
 	/**
 	 * @param b TicTacToe-board to check for a winner
@@ -23,8 +24,9 @@ import ch.bbw.m450.tictactoe.players.HumanPlayer;
 	 * @return true if the colorToPlay wins the current board (has three in a line)
 	 */
 	public static boolean isWin(Stone[] b, Stone color) {
+		// Prüfreihenfolge: drei Zeilen, drei Spalten und zwei Diagonalen.
 		// @formatter:off
-<span class="pc bpc" id="L27" title="4 of 48 branches missed.">		return  b[0] == color &amp;&amp; b[0] == b[1] &amp;&amp; b[1] == b[2] ||</span>
+<span class="pc bpc" id="L29" title="4 of 48 branches missed.">		return  b[0] == color &amp;&amp; b[0] == b[1] &amp;&amp; b[1] == b[2] ||</span>
 				b[3] == color &amp;&amp; b[3] == b[4] &amp;&amp; b[4] == b[5] ||
 				b[6] == color &amp;&amp; b[6] == b[7] &amp;&amp; b[7] == b[8] ||
 				b[0] == color &amp;&amp; b[0] == b[3] &amp;&amp; b[3] == b[6] ||
@@ -35,20 +37,26 @@ import ch.bbw.m450.tictactoe.players.HumanPlayer;
 		// @formatter:on
 	}
 
+	/**
+	 * Wandelt das eindimensionale Board in eine farbige 3x3-Konsolenausgabe um.
+	 * Freie Felder werden mit ihrem spielbaren Index dargestellt.
+	 */
 	public static String toString(Stone[] board) {
-<span class="fc" id="L39">		var sb = new StringBuilder();</span>
-<span class="fc bfc" id="L40" title="All 2 branches covered.">		for (var i = 0; i &lt; 3; i++) {</span>
-<span class="fc bfc" id="L41" title="All 2 branches covered.">			for (var j = 0; j &lt; 3; j++) {</span>
-<span class="fc" id="L42">				var index = i * 3 + j;</span>
-<span class="fc bfc" id="L43" title="All 2 branches covered.">				String color = board[index] == Stone.CROSS ? &quot;X&quot; : &quot;O&quot;;</span>
-<span class="fc" id="L44">				color = &quot;\033[1m&quot; + color + &quot;\033[0m&quot;;</span>
-<span class="fc bfc" id="L45" title="All 2 branches covered.">				color = board[index] == null ? &quot;\033[37m&quot; + index + &quot;\033[0m&quot; : color;</span>
-<span class="fc" id="L46">				sb.append(color)</span>
-<span class="fc" id="L47">						.append(&quot;  &quot;);</span>
+<span class="fc" id="L45">		var sb = new StringBuilder();</span>
+		// Die äußere Schleife durchläuft Zeilen, die innere deren drei Spalten.
+<span class="fc bfc" id="L47" title="All 2 branches covered.">		for (var i = 0; i &lt; 3; i++) {</span>
+<span class="fc bfc" id="L48" title="All 2 branches covered.">			for (var j = 0; j &lt; 3; j++) {</span>
+<span class="fc" id="L49">				var index = i * 3 + j;</span>
+				// Belegte Felder erscheinen fett, freie Felder grau als Positionsnummer.
+<span class="fc bfc" id="L51" title="All 2 branches covered.">				String color = board[index] == Stone.CROSS ? &quot;X&quot; : &quot;O&quot;;</span>
+<span class="fc" id="L52">				color = &quot;\033[1m&quot; + color + &quot;\033[0m&quot;;</span>
+<span class="fc bfc" id="L53" title="All 2 branches covered.">				color = board[index] == null ? &quot;\033[37m&quot; + index + &quot;\033[0m&quot; : color;</span>
+<span class="fc" id="L54">				sb.append(color)</span>
+<span class="fc" id="L55">						.append(&quot;  &quot;);</span>
 			}
-<span class="fc" id="L49">			sb.append(&quot;\n&quot;);</span>
+<span class="fc" id="L57">			sb.append(&quot;\n&quot;);</span>
 		}
-<span class="fc" id="L51">		return sb.toString();</span>
+<span class="fc" id="L59">		return sb.toString();</span>
 	}
 
 	/**
@@ -59,36 +67,45 @@ import ch.bbw.m450.tictactoe.players.HumanPlayer;
 	 * @return the winning Color or `null` on draw
 	 */
 	public static Stone play(TicTacToePlayer xPlayer, TicTacToePlayer oPlayer) {
-		// the board is organized as a 1-dimensional matrix of size 3x3=9
-		// to get the index for position at row r and colum c, calculate index=r*3+c
+		// Das Board ist ein eindimensionales Array; Index = Zeile * 3 + Spalte.
 		//     0 | 1 | 2
 		//    ---+---+---
 		//     3 | 4 | 5
 		//    ---+---+---
 		//     6 | 7 | 8
-<span class="fc bfc" id="L69" title="All 2 branches covered.">		if(xPlayer == oPlayer) {</span>
-<span class="fc" id="L70">			throw new IllegalArgumentException(&quot;players must differ&quot;);</span>
+		// Ein Objekt darf nicht gleichzeitig beide Spielerrollen übernehmen.
+<span class="fc bfc" id="L77" title="All 2 branches covered.">		if (xPlayer == oPlayer) {</span>
+<span class="fc" id="L78">			throw new IllegalArgumentException(&quot;players must differ&quot;);</span>
 		}
-<span class="fc" id="L72">		var board = new Stone[BOARD_SIZE]; // all null -&gt; empty</span>
-<span class="fc" id="L73">		var currentPlayer = xPlayer;</span>
-<span class="fc bfc" id="L74" title="All 2 branches covered.">		for (var round = 0; round &lt; BOARD_SIZE; round++) { // it lasts for 9 rounds</span>
-<span class="fc bfc" id="L75" title="All 2 branches covered.">			var currentColor = currentPlayer == xPlayer ? Stone.CROSS : Stone.CIRCLE;</span>
-			// we copy to avoid side effects by the player (not needed if they behave)
-<span class="fc" id="L77">			var clone = Arrays.copyOf(board, board.length);</span>
-<span class="fc" id="L78">			var playTo = currentPlayer.play(clone, currentColor);</span>
-<span class="fc bfc" id="L79" title="All 6 branches covered.">			if (playTo &lt; 0 || playTo &gt;= 9 || board[playTo] != null) {</span>
-<span class="fc" id="L80">				System.out.println(toString(board));</span>
-<span class="fc" id="L81">				throw new IllegalStateException(&quot;cannot play to position &quot; + playTo);</span>
+
+		// null kennzeichnet jedes zu Beginn noch freie Feld.
+<span class="fc" id="L82">		var board = new Stone[BOARD_SIZE];</span>
+<span class="fc" id="L83">		var currentPlayer = xPlayer;</span>
+		// Nach höchstens neun gültigen Zügen ist das Board vollständig belegt.
+<span class="fc bfc" id="L85" title="All 2 branches covered.">		for (var round = 0; round &lt; BOARD_SIZE; round++) {</span>
+<span class="fc bfc" id="L86" title="All 2 branches covered.">			var currentColor = currentPlayer == xPlayer ? Stone.CROSS : Stone.CIRCLE;</span>
+			// Eine defensive Kopie verhindert Änderungen am internen Spielzustand.
+<span class="fc" id="L88">			var clone = Arrays.copyOf(board, board.length);</span>
+<span class="fc" id="L89">			var playTo = currentPlayer.play(clone, currentColor);</span>
+
+			// Nur freie Positionen innerhalb des Boards sind gültige Züge.
+<span class="fc bfc" id="L92" title="All 6 branches covered.">			if (playTo &lt; 0 || playTo &gt;= 9 || board[playTo] != null) {</span>
+<span class="fc" id="L93">				System.out.println(toString(board));</span>
+<span class="fc" id="L94">				throw new IllegalStateException(&quot;cannot play to position &quot; + playTo);</span>
 			}
-<span class="fc" id="L83">			board[playTo] = currentColor; // do the move</span>
-<span class="fc bfc" id="L84" title="All 2 branches covered.">			if (isWin(board, currentColor)) { // game over and current player wins</span>
-<span class="fc" id="L85">				System.out.println(toString(board) + &quot;...and the winner is: &quot; + currentColor);</span>
-<span class="fc" id="L86">				return currentColor;</span>
+			// Der validierte Zug wird in den echten Spielzustand übernommen.
+<span class="fc" id="L97">			board[playTo] = currentColor;</span>
+<span class="fc bfc" id="L98" title="All 2 branches covered.">			if (isWin(board, currentColor)) {</span>
+<span class="fc" id="L99">				System.out.println(toString(board) + &quot;...and the winner is: &quot; + currentColor);</span>
+<span class="fc" id="L100">				return currentColor;</span>
 			}
-<span class="fc bfc" id="L88" title="All 2 branches covered.">			currentPlayer = currentPlayer == xPlayer ? oPlayer : xPlayer;</span>
+			// Ohne Sieg ist im nächsten Durchlauf der andere Spieler an der Reihe.
+<span class="fc bfc" id="L103" title="All 2 branches covered.">			currentPlayer = currentPlayer == xPlayer ? oPlayer : xPlayer;</span>
 		}
-<span class="fc" id="L90">		System.out.println(&quot;it's a draw!&quot;);</span>
-<span class="fc" id="L91">		return null;</span>
+
+		// Alle neun Züge wurden gespielt, ohne dass eine Gewinnlinie entstand.
+<span class="fc" id="L107">		System.out.println(&quot;it's a draw!&quot;);</span>
+<span class="fc" id="L108">		return null;</span>
 	}
 
 }
