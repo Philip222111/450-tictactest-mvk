@@ -22,15 +22,18 @@ class CoverageHistoryTest(unittest.TestCase):
                 update(report, site)
             with patch.dict(os.environ, COVERAGE_COMMIT='b' * 40, COVERAGE_RUN='11'):
                 update(report, site)
+            with patch.dict(os.environ, COVERAGE_COMMIT='c' * 40, COVERAGE_RUN='9'):
+                update(report, site)
             history = json.loads((site / 'coverage-history/history.json').read_text())
-            self.assertEqual(len(history), 2)
-            self.assertEqual(history[0]['instruction'], 75)
-            self.assertEqual(history[0]['branch'], 50)
-            self.assertEqual(history[0]['commit'], 'a' * 40)
+            self.assertEqual(len(history), 3)
+            self.assertEqual([point['run_id'] for point in history], [9, 10, 11])
+            self.assertEqual(history[1]['instruction'], 75)
+            self.assertEqual(history[1]['branch'], 50)
+            self.assertEqual(history[1]['commit'], 'a' * 40)
             self.assertIn('Branch coverage', (site / 'coverage-history/index.html').read_text())
             # Corrupt historical data must fail instead of silently resetting history.
             (site / 'coverage-history/history.json').write_text('invalid')
-            with patch.dict(os.environ, COVERAGE_COMMIT='c' * 40, COVERAGE_RUN='12'):
+            with patch.dict(os.environ, COVERAGE_COMMIT='d' * 40, COVERAGE_RUN='12'):
                 with self.assertRaises(json.JSONDecodeError):
                     update(report, site)
 

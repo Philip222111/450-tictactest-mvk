@@ -1,5 +1,7 @@
 .*
 !.git*
+!.devcontainer/
+!.devcontainer/**
 
 build/
 !**/src/main/**/build/
@@ -12,6 +14,9 @@ out/
 !**/src/test/**/out/
 
 node_modules/
+
+__pycache__/
+*.pyc
 
 npm-debug.log*
 yarn-debug.log*

@@ -1,0 +1,74 @@
+name: Container bauen und veröffentlichen
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.devcontainer/**'
+      - '.github/container/**'
+      - '.github/workflows/container.yml'
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: ghcr-container-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Repository auschecken
+        uses: actions/checkout@v4
+
+      - name: Docker Buildx einrichten
+        uses: docker/setup-buildx-action@v4
+
+      - name: Bei GHCR anmelden
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: CI-Container neu bauen und hochladen
+        id: ci-build
+        uses: docker/build-push-action@v7
+        with:
+          context: .github/container
+          file: .github/container/Dockerfile
+          platforms: linux/amd64
+          pull: true
+          no-cache: true
+          push: true
+          tags: |
+            ghcr.io/philip222111/450-tictactest-mvk:latest
+            ghcr.io/philip222111/450-tictactest-mvk:sha-${{ github.sha }}
+
+      - name: Devcontainer neu bauen und hochladen
+        id: dev-build
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: .devcontainer/Dockerfile
+          platforms: linux/amd64
+          pull: true
+          no-cache: true
+          push: true
+          tags: |
+            ghcr.io/philip222111/450-tictactest-mvk-devcontainer:latest
+            ghcr.io/philip222111/450-tictactest-mvk-devcontainer:sha-${{ github.sha }}
+
+      - name: Veröffentlichte Images prüfen
+        env:
+          CI_IMAGE_DIGEST: ${{ steps.ci-build.outputs.digest }}
+          DEV_IMAGE_DIGEST: ${{ steps.dev-build.outputs.digest }}
+        run: |
+          docker pull "ghcr.io/philip222111/450-tictactest-mvk@$CI_IMAGE_DIGEST"
+          docker pull "ghcr.io/philip222111/450-tictactest-mvk-devcontainer@$DEV_IMAGE_DIGEST"
+          docker run --rm "ghcr.io/philip222111/450-tictactest-mvk@$CI_IMAGE_DIGEST" java -version
+          docker run --rm "ghcr.io/philip222111/450-tictactest-mvk-devcontainer@$DEV_IMAGE_DIGEST" java -version
+          echo "CI: ghcr.io/philip222111/450-tictactest-mvk@$CI_IMAGE_DIGEST" >> "$GITHUB_STEP_SUMMARY"
+          echo "Dev: ghcr.io/philip222111/450-tictactest-mvk-devcontainer@$DEV_IMAGE_DIGEST" >> "$GITHUB_STEP_SUMMARY"
