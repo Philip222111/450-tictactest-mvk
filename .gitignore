@@ -1,5 +1,7 @@
 .*
 !.git*
+!.devcontainer/
+!.devcontainer/**
 
 build/
 !**/src/main/**/build/

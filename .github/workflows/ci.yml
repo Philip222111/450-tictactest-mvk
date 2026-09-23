@@ -44,7 +44,6 @@ jobs:
             build/reports/tests/test/
             build/test-results/test/
           if-no-files-found: ignore
-
       - name: JaCoCo-Bericht bereitstellen
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
