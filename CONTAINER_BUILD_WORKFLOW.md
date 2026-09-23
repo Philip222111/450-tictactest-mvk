@@ -32,16 +32,17 @@ sein, bevor der Ablauf fortgesetzt wird.
 
 Nach erfolgreicher Prüfung führt
 `scripts/update_devcontainer_version.py vX.Y.Z` zwei kontrollierte Änderungen
-aus:
-
-- `.devcontainer/devcontainer.json` verwendet das neue GHCR-Image,
-- `.github/workflows/ci.yml` verwendet exakt dieselbe Version.
+aus: `.devcontainer/devcontainer.json` wird auf den unveränderlichen
+SemVer-Tag des neuen GHCR-Images gesetzt. Die CI referenziert dauerhaft
+`stable`; dieser Tag wird bereits beim geprüften Release atomar auf dieselben
+Image-Inhalte aktualisiert. Dadurch muss der Workflow seine eigene
+Workflow-Datei nicht verändern.
 
 Der Workflow committet diese Änderungen auf
 `automation/devcontainer-vX.Y.Z` und eröffnet einen Pull Request nach `main`.
 Reviews und Branch Protection bleiben dadurch wirksam. Erst nach erfolgreicher
-CI und Merge wird die neue Version zur lokalen und automatischen
-Standardumgebung des Repositorys.
+CI und Merge wird die neue Version zur lokalen Standardumgebung des
+Repositorys; die CI nutzt sie bereits über den freigegebenen `stable`-Tag.
 
 ## Berechtigungen
 

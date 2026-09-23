@@ -17,8 +17,8 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
     container:
-      # Wird nach jedem freigegebenen Release automatisch per PR aktualisiert.
-      image: ghcr.io/philip222111/450-tictactest-mvk-devcontainer:latest
+      # stable wird ausschließlich durch ein geprüftes GitHub-Release verschoben.
+      image: ghcr.io/philip222111/450-tictactest-mvk-devcontainer:stable
       # GitHub-Actions benötigen Schreibzugriff auf die gemounteten Runner-Pfade.
       options: --user root
       credentials:

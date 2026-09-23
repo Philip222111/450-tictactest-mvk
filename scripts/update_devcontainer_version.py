@@ -26,19 +26,6 @@ def update(version: str, repository: Path) -> None:
         encoding="utf-8",
     )
 
-    workflow_path = repository / ".github" / "workflows" / "ci.yml"
-    workflow = workflow_path.read_text(encoding="utf-8")
-    updated, replacements = re.subn(
-        rf"image: {re.escape(IMAGE)}:[^\s]+",
-        f"image: {IMAGE}:{version}",
-        workflow,
-        count=1,
-    )
-    if replacements != 1:
-        raise RuntimeError("The CI Devcontainer image reference was not found exactly once")
-    workflow_path.write_text(updated, encoding="utf-8")
-
-
 if __name__ == "__main__":
     if len(sys.argv) != 2:
         raise SystemExit("Usage: update_devcontainer_version.py v1.2.3")

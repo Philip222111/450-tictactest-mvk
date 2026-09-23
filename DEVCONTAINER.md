@@ -88,9 +88,11 @@ ghcr.io/philip222111/450-tictactest-mvk-devcontainer:sha-<commit>
 `vX.Y.Z` und `sha-...` sind unveränderliche Referenzen. `stable` und
 `latest` werden ausschließlich bei einer offiziellen Freigabe verschoben.
 Nach dem Upload und einem Java-/Gradle-Funktionstest erstellt der Workflow
-automatisch einen Pull Request. Dieser setzt Devcontainer und CI gemeinsam auf
-den unveränderlichen SemVer-Tag. Damit nutzen beide nach geprüftem Merge die
-neueste freigegebene Version, ohne ungeprüfte Images zu übernehmen.
+automatisch einen Pull Request. Dieser setzt die lokale Umgebung auf den
+unveränderlichen SemVer-Tag. Die CI verwendet den Tag `stable`, der
+ausschließlich im selben geprüften Release-Schritt verschoben wird. Damit
+verwenden CI und lokale Entwicklung die neueste freigegebene Image-Version,
+ohne ungeprüfte Images zu übernehmen.
 
 Für Build und Push wird nur das kurzlebige `GITHUB_TOKEN` mit
 `packages: write` verwendet. Es werden keine Zugangsdaten eingecheckt.
