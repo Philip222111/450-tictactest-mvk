@@ -4,6 +4,23 @@ plugins {
     id 'jacoco'
 }
 
+// Eine Quelle für lokale Builds, JAR-Namen und den überprüften Release-Tag.
+version = file('VERSION').text.trim()
+if (!(version ==~ /(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)/)) {
+    throw new GradleException('VERSION muss MAJOR.MINOR.PATCH enthalten')
+}
+
+// Die Anwendung hat keine externen Laufzeitabhängigkeiten.
+jar {
+    archiveBaseName = 'tictactest'
+    preserveFileTimestamps = false
+    reproducibleFileOrder = true
+    manifest {
+        attributes('Main-Class': 'ch.bbw.m450.tictactoe.TicTacToeMain',
+                   'Implementation-Version': project.version)
+    }
+}
+
 // Verwendet für Build und Tests unabhängig vom Hostsystem Java 25.
 java {
     toolchain {

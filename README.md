@@ -89,6 +89,9 @@ Versions-PRs sind in
 
 ## Weitere Dokumentation
 
+- [Anwendungs-Releases, Download und Freigabeprozess](RELEASE.md)
+- [Changelog](CHANGELOG.md)
+
 - [Testkonzept](TESTKONZEPT.md)
 - [Devcontainer](DEVCONTAINER.md)
 - [Coverage-Zeitreihe](COVERAGE.md)

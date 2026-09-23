@@ -1,0 +1,82 @@
+name: Application release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: application-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Tag, main und Changelog prüfen
+        env:
+          TAG: ${{ github.ref_name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          version=$(cat VERSION)
+          [[ "$version" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]
+          [[ "$TAG" == "v$version" ]]
+          git fetch origin main
+          git merge-base --is-ancestor HEAD origin/main
+          python - "$version" <<'PY'
+          import pathlib, re, sys
+          version = sys.argv[1]
+          text = pathlib.Path("CHANGELOG.md").read_text(encoding="utf-8")
+          match = re.search(r"^## " + re.escape(version) + r" - (\d{4}-\d{2}-\d{2})\n(.*?)(?=^## |\Z)", text, re.M | re.S)
+          if not match:
+              raise SystemExit("Missing dated changelog section")
+          import datetime
+          datetime.date.fromisoformat(match[1])
+          notes = match[0].strip()
+          for heading in ("### Added", "### Changed", "### Fixed"):
+              if heading not in notes:
+                  raise SystemExit("Missing changelog category: " + heading)
+          pathlib.Path("release-notes.md").write_text(notes + "\n", encoding="utf-8")
+          PY
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+          echo "Commit: $(git rev-parse HEAD)" >> release-notes.md
+          echo "Voraussetzung: Java 25; Start: java -jar tictactest-$version.jar" >> release-notes.md
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Tests und reproduzierbares JAR bauen
+        run: bash gradlew --no-daemon --no-build-cache -Dorg.gradle.java.installations.paths="$JAVA_HOME" clean build
+
+      - name: Ausführbares JAR testen und Prüfsumme erstellen
+        run: |
+          python scripts/smoke_jar.py "build/libs/tictactest-$VERSION.jar"
+          cd build/libs
+          sha256sum "tictactest-$VERSION.jar" > "tictactest-$VERSION.jar.sha256"
+
+      - name: GitHub Release veröffentlichen
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          gh release create "$TAG" +            "build/libs/tictactest-$VERSION.jar" +            "build/libs/tictactest-$VERSION.jar.sha256" +            --verify-tag --title "TicTacTest $TAG" --notes-file release-notes.md
+
+      - name: Veröffentlichtes Artefakt herunterladen und testen
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          gh release download "$TAG" --dir downloaded --pattern '*.jar' --pattern '*.sha256'
+          (cd downloaded && sha256sum -c "tictactest-$VERSION.jar.sha256")
+          python scripts/smoke_jar.py "downloaded/tictactest-$VERSION.jar"
