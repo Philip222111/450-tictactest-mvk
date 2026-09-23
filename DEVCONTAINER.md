@@ -16,6 +16,10 @@ Der `postCreateCommand` führt `./gradlew --no-daemon build` aus. Dadurch
 werden Kompilierung, Tests und JaCoCo-Bericht beim Erstellen der lokalen
 Umgebung geprüft.
 
+VS Code arbeitet als unprivilegierter Benutzer `vscode`. Nur der GitHub-
+Actions-Job startet dasselbe Image mit `--user root`, weil der Runner seine
+temporären Arbeitsverzeichnisse mit abweichenden Besitzrechten einbindet.
+
 ## Verwendung in VS Code
 
 Voraussetzungen sind Docker Desktop, VS Code und die Erweiterung
