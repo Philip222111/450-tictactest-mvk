@@ -70,7 +70,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ github.ref_name }}
         run: |
-          gh release create "$TAG" +            "build/libs/tictactest-$VERSION.jar" +            "build/libs/tictactest-$VERSION.jar.sha256" +            --verify-tag --title "TicTacTest $TAG" --notes-file release-notes.md
+          gh release create "$TAG" "build/libs/tictactest-$VERSION.jar" "build/libs/tictactest-$VERSION.jar.sha256" --verify-tag --title "TicTacTest $TAG" --notes-file release-notes.md
 
       - name: Veröffentlichtes Artefakt herunterladen und testen
         env:
