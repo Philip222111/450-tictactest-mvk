@@ -1,9 +1,5 @@
 {
     "name": "TicTacToe - Java 25",
-    "build": {
-        "dockerfile": "Dockerfile",
-        "context": ".."
-    },
     "remoteUser": "vscode",
     "updateRemoteUserUID": false,
     "containerEnv": {
@@ -25,5 +21,6 @@
             }
         }
     },
-    "postCreateCommand": "chmod +x gradlew && ./gradlew --no-daemon build"
+    "postCreateCommand": "chmod +x gradlew && ./gradlew --no-daemon build",
+    "image": "ghcr.io/philip222111/450-tictactest-mvk-devcontainer:v1.0.1"
 }
