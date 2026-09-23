@@ -2,13 +2,17 @@ FROM eclipse-temurin:25-jdk-alpine
 
 ARG GRADLE_VERSION=9.7.0
 
+# Die OCI-Metadaten verbinden das veröffentlichte Image mit dem Repository.
 LABEL org.opencontainers.image.source="https://github.com/Philip222111/450-tictactest-mvk"
 LABEL org.opencontainers.image.description="Java 25 development environment for TicTacTest"
 
+# gcompat und libstdc++ ermöglichen JavaScript-Actions im Alpine-CI-Container.
 RUN apk add --no-cache \
         bash \
         curl \
+        gcompat \
         git \
+        libstdc++ \
         openssh-client \
         shadow \
         unzip \
@@ -28,5 +32,6 @@ RUN apk add --no-cache \
         'export PATH="$JAVA_HOME/bin:$PATH"' \
         > /etc/profile.d/java.sh
 
+# Entwicklungs- und CI-Befehle laufen ohne Root-Rechte.
 USER vscode
 WORKDIR /workspaces

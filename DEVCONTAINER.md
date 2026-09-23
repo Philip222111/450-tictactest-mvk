@@ -1,74 +1,102 @@
 # Devcontainer
 
-## Zweck und Aufbau
+## Entwicklungsumgebung
 
-Die Konfiguration unter `.devcontainer/` stellt dieselbe Hauptumgebung wie das
-Projekt bereit:
+Die Definition unter `.devcontainer/` stellt für lokale Entwicklung und CI
+dieselbe Umgebung bereit:
 
 - Eclipse Temurin JDK 25 auf Alpine Linux,
-- Gradle 9.7 und zusätzlich den projektspezifischen Gradle Wrapper,
+- Gradle 9.7 sowie den projektspezifischen Gradle Wrapper,
+- JUnit Jupiter 6 als Gradle-Testabhängigkeit,
+- Benutzer `vscode` mit UID und GID `1000:1000`,
 - Bash, Git, OpenSSH, Curl und Unzip,
-- unprivilegierter Benutzer `vscode`,
-- persistenter Gradle-Cache als Docker-Volume,
 - VS-Code-Erweiterungen für Java und Gradle.
 
-`postCreateCommand` macht den Wrapper ausführbar und führt `./gradlew --no-daemon
-build` aus. Damit wird beim Erstellen geprüft, dass Kompilierung, Tests und
-JaCoCo-Bericht in der Umgebung funktionieren.
+Der `postCreateCommand` führt `./gradlew --no-daemon build` aus. Dadurch
+werden Kompilierung, Tests und JaCoCo-Bericht beim Erstellen der lokalen
+Umgebung geprüft.
 
-## Verwendung mit VS Code
+VS Code arbeitet als unprivilegierter Benutzer `vscode`. Nur der GitHub-
+Actions-Job startet dasselbe Image mit `--user root`, weil der Runner seine
+temporären Arbeitsverzeichnisse mit abweichenden Besitzrechten einbindet.
 
-Voraussetzungen sind Docker Desktop (oder eine kompatible Docker Engine), VS
-Code und die Erweiterung **Dev Containers**.
+## Verwendung in VS Code
 
-1. Genau den Repository-Ordner `450-tictactest-mvk` in VS Code öffnen.
-2. In der Befehlspalette **Dev Containers: Reopen in Container** auswählen.
-3. Den Image-Build und anschließend den `postCreateCommand` abwarten.
-4. Im Container-Terminal `java -version` und `./gradlew build` ausführen.
+Voraussetzungen sind Docker Desktop, VS Code und die Erweiterung
+**Dev Containers**.
 
-Nach Änderungen am Dockerfile oder an `devcontainer.json` wird **Dev Containers:
-Rebuild Container** verwendet.
+1. Das Repository in VS Code öffnen.
+2. **Dev Containers: Reopen in Container** ausführen.
+3. Image-Download und `postCreateCommand` abwarten.
+4. Im Container mit `java -version`, `gradle --version` und
+   `./gradlew build` prüfen.
 
-## Manueller Build und Funktionstest
+Nach der Freigabe einer neuen Version aktualisiert ein automatischer Pull
+Request das Feld `image` in `.devcontainer/devcontainer.json`. Nach dem
+Merge lädt **Dev Containers: Rebuild Container** die neue Version.
 
-Vom Repository-Wurzelverzeichnis aus:
+## Lokaler Build der Container-Definition
+
+Das veröffentlichte Image wird ausschließlich aus dem eingecheckten Dockerfile
+gebaut. Änderungen können vor einer Freigabe lokal geprüft werden:
 
 ```sh
 docker build -f .devcontainer/Dockerfile -t tictactest-devcontainer:local .
 docker run --rm tictactest-devcontainer:local java -version
+docker run --rm tictactest-devcontainer:local gradle --version
 ```
 
-Ein vollständiger Test mit eingebundenem Quellcode ist in PowerShell möglich:
+Vollständiger Projekttest in PowerShell:
 
 ```powershell
-docker run --rm `
-  -v "${PWD}:/workspaces/450-tictactest-mvk" `
-  -w /workspaces/450-tictactest-mvk `
+docker run --rm --user root `
+  -v "${PWD}:/workspace" `
+  -w /workspace `
   tictactest-devcontainer:local `
   ./gradlew --no-daemon build
 ```
 
-## Was bedeutet „Devcontainer pushen“?
+## Push, Versionierung und Freigabe
 
-Es gibt zwei getrennte Vorgänge:
+„Devcontainer pushen“ umfasst zwei getrennte Vorgänge:
 
-1. **Konfiguration pushen:** `.devcontainer/devcontainer.json` und das Dockerfile
-   werden normal mit Git committet und in das Repository gepusht. Das genügt,
-   damit andere Personen den Devcontainer lokal reproduzieren können.
-2. **Vorgebautes Image pushen:** Der Workflow `.github/workflows/container.yml`
-   baut zusätzlich dasselbe Dockerfile und veröffentlicht die Tags
-   `ghcr.io/philip222111/450-tictactest-mvk-devcontainer:latest` und
-   `...:sha-<commit>` in GHCR. Das ist ein optionaler, vorgebauter Nachweis; die
-   eingecheckte Konfiguration bleibt die maßgebliche Definition.
+1. Dockerfile und `devcontainer.json` werden wie normaler Quellcode per Git
+   gepusht.
+2. Ein freigegebenes Image wird in die GitHub Container Registry gepusht.
 
-Der Workflow läuft manuell sowie bei Änderungen an `.devcontainer/`, am
-CI-Dockerfile oder am Workflow selbst. Er verwendet ausschließlich das von
-GitHub Actions bereitgestellte `GITHUB_TOKEN` mit `packages: write`. Es werden
-keine persönlichen Tokens oder Zugangsdaten im Repository gespeichert. Ob das
-Package öffentlich sichtbar ist und ob andere Repositories darauf zugreifen
-dürfen, wird in den GitHub-Package-Einstellungen festgelegt.
+Devcontainer-Versionen verwenden Semantic Versioning:
 
-Daneben veröffentlicht derselbe Workflow das separate CI-Image
-`ghcr.io/philip222111/450-tictactest-mvk`. Dieses glibc-basierte Image ist für
-GitHub Actions optimiert und nicht mit dem interaktiven Alpine-Devcontainer zu
-verwechseln.
+- **Patch** (`v1.0.1`): Fehlerkorrekturen ohne Änderung der vorgesehenen
+  Werkzeuge,
+- **Minor** (`v1.1.0`): neue kompatible Werkzeuge oder Erweiterungen,
+- **Major** (`v2.0.0`): inkompatible Änderungen, etwa ein neues Basissystem.
+
+Ein Image gilt nur dann als freigegeben, wenn ein GitHub-Release mit einem Tag
+der Form `devcontainer-vX.Y.Z` veröffentlicht wurde. Der Release-Commit muss
+Bestandteil von `main` sein. Branch-Pushes und Pull Requests bauen das
+Dockerfile lediglich zur Validierung und erhalten keine Registry-Tags.
+
+Bei einer Freigabe veröffentlicht GitHub Actions vier Tags:
+
+```text
+ghcr.io/philip222111/450-tictactest-mvk-devcontainer:vX.Y.Z
+ghcr.io/philip222111/450-tictactest-mvk-devcontainer:stable
+ghcr.io/philip222111/450-tictactest-mvk-devcontainer:latest
+ghcr.io/philip222111/450-tictactest-mvk-devcontainer:sha-<commit>
+```
+
+`vX.Y.Z` und `sha-...` sind unveränderliche Referenzen. `stable` und
+`latest` werden ausschließlich bei einer offiziellen Freigabe verschoben.
+Nach dem Upload und einem Java-/Gradle-Funktionstest erstellt der Workflow
+automatisch einen Pull Request. Dieser setzt Devcontainer und CI gemeinsam auf
+den unveränderlichen SemVer-Tag. Damit nutzen beide nach geprüftem Merge die
+neueste freigegebene Version, ohne ungeprüfte Images zu übernehmen.
+
+Für Build und Push wird nur das kurzlebige `GITHUB_TOKEN` mit
+`packages: write` verwendet. Es werden keine Zugangsdaten eingecheckt.
+Damit der automatische PR erstellt werden kann, muss unter
+**Settings → Actions → General → Workflow permissions** die Option
+**Allow GitHub Actions to create and approve pull requests** aktiviert sein.
+
+Der technische Ablauf steht in
+[CONTAINER_BUILD_WORKFLOW.md](CONTAINER_BUILD_WORKFLOW.md).

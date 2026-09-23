@@ -17,7 +17,10 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/philip222111/450-tictactest-mvk:latest
+      # Wird nach jedem freigegebenen Release automatisch per PR aktualisiert.
+      image: ghcr.io/philip222111/450-tictactest-mvk-devcontainer:latest
+      # GitHub-Actions benötigen Schreibzugriff auf die gemounteten Runner-Pfade.
+      options: --user root
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}

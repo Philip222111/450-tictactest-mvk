@@ -1,27 +1,87 @@
-name: Container bauen und veröffentlichen
+name: Devcontainer bauen und veröffentlichen
 
 on:
-  workflow_dispatch:
-  push:
+  pull_request:
     paths:
       - '.devcontainer/**'
-      - '.github/container/**'
       - '.github/workflows/container.yml'
+      - 'scripts/update_devcontainer_version.py'
+      - 'scripts/test_update_devcontainer_version.py'
+  push:
+    branches:
+      - main
+    paths:
+      - '.devcontainer/**'
+      - '.github/workflows/container.yml'
+      - 'scripts/update_devcontainer_version.py'
+      - 'scripts/test_update_devcontainer_version.py'
+  release:
+    types: [published]
+  workflow_dispatch:
 
 permissions:
   contents: read
-  packages: write
 
 concurrency:
-  group: ghcr-container-publish
+  group: devcontainer-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: false
 
+env:
+  DEVCONTAINER_IMAGE: ghcr.io/philip222111/450-tictactest-mvk-devcontainer
+
 jobs:
-  publish:
+  validate:
+    if: github.event_name != 'release'
     runs-on: ubuntu-latest
     steps:
       - name: Repository auschecken
         uses: actions/checkout@v4
+
+      - name: Versionsaktualisierung testen
+        run: python -m unittest discover -s scripts -p 'test_update_devcontainer_version.py'
+
+      - name: Docker Buildx einrichten
+        uses: docker/setup-buildx-action@v4
+
+      - name: Devcontainer bauen
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: .devcontainer/Dockerfile
+          platforms: linux/amd64
+          pull: true
+          push: false
+          tags: tictactest-devcontainer:validation
+
+  publish:
+    if: github.event_name == 'release'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+      pull-requests: write
+    steps:
+      - name: Release und Repository auschecken
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Release-Tag validieren
+        id: version
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$RELEASE_TAG" =~ ^devcontainer-v([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+            echo "Erwartet wird ein Tag wie devcontainer-v1.0.0." >&2
+            exit 1
+          fi
+          git fetch origin main
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "Nur Commits aus main dürfen als Devcontainer veröffentlicht werden." >&2
+            exit 1
+          fi
+          echo "version=v${BASH_REMATCH[1]}" >> "$GITHUB_OUTPUT"
 
       - name: Docker Buildx einrichten
         uses: docker/setup-buildx-action@v4
@@ -33,21 +93,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: CI-Container neu bauen und hochladen
-        id: ci-build
-        uses: docker/build-push-action@v7
-        with:
-          context: .github/container
-          file: .github/container/Dockerfile
-          platforms: linux/amd64
-          pull: true
-          no-cache: true
-          push: true
-          tags: |
-            ghcr.io/philip222111/450-tictactest-mvk:latest
-            ghcr.io/philip222111/450-tictactest-mvk:sha-${{ github.sha }}
-
-      - name: Devcontainer neu bauen und hochladen
+      - name: Freigegebenen Devcontainer bauen und hochladen
         id: dev-build
         uses: docker/build-push-action@v7
         with:
@@ -55,20 +101,46 @@ jobs:
           file: .devcontainer/Dockerfile
           platforms: linux/amd64
           pull: true
-          no-cache: true
           push: true
           tags: |
-            ghcr.io/philip222111/450-tictactest-mvk-devcontainer:latest
-            ghcr.io/philip222111/450-tictactest-mvk-devcontainer:sha-${{ github.sha }}
+            ${{ env.DEVCONTAINER_IMAGE }}:${{ steps.version.outputs.version }}
+            ${{ env.DEVCONTAINER_IMAGE }}:stable
+            ${{ env.DEVCONTAINER_IMAGE }}:latest
+            ${{ env.DEVCONTAINER_IMAGE }}:sha-${{ github.sha }}
 
-      - name: Veröffentlichte Images prüfen
+      - name: Veröffentlichtes Image prüfen
         env:
-          CI_IMAGE_DIGEST: ${{ steps.ci-build.outputs.digest }}
-          DEV_IMAGE_DIGEST: ${{ steps.dev-build.outputs.digest }}
+          IMAGE_DIGEST: ${{ steps.dev-build.outputs.digest }}
         run: |
-          docker pull "ghcr.io/philip222111/450-tictactest-mvk@$CI_IMAGE_DIGEST"
-          docker pull "ghcr.io/philip222111/450-tictactest-mvk-devcontainer@$DEV_IMAGE_DIGEST"
-          docker run --rm "ghcr.io/philip222111/450-tictactest-mvk@$CI_IMAGE_DIGEST" java -version
-          docker run --rm "ghcr.io/philip222111/450-tictactest-mvk-devcontainer@$DEV_IMAGE_DIGEST" java -version
-          echo "CI: ghcr.io/philip222111/450-tictactest-mvk@$CI_IMAGE_DIGEST" >> "$GITHUB_STEP_SUMMARY"
-          echo "Dev: ghcr.io/philip222111/450-tictactest-mvk-devcontainer@$DEV_IMAGE_DIGEST" >> "$GITHUB_STEP_SUMMARY"
+          set -euo pipefail
+          docker pull "$DEVCONTAINER_IMAGE@$IMAGE_DIGEST"
+          docker run --rm "$DEVCONTAINER_IMAGE@$IMAGE_DIGEST" java -version
+          docker run --rm "$DEVCONTAINER_IMAGE@$IMAGE_DIGEST" gradle --version
+          echo "Devcontainer: $DEVCONTAINER_IMAGE@$IMAGE_DIGEST" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Versions-PR vorbereiten
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          git checkout main
+          python scripts/update_devcontainer_version.py "$VERSION"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          branch="automation/devcontainer-$VERSION"
+          git checkout -b "$branch"
+          git add .devcontainer/devcontainer.json .github/workflows/ci.yml
+          git commit -m "Use released devcontainer $VERSION"
+          git push --set-upstream origin "$branch"
+          echo "branch=$branch" >> "$GITHUB_ENV"
+
+      - name: Pull Request erstellen
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          gh pr create \
+            --base main \
+            --head "$branch" \
+            --title "Use released devcontainer $VERSION" \
+            --body "Aktualisiert Entwicklungsumgebung und CI automatisch auf das geprüfte Devcontainer-Release $VERSION."

@@ -66,8 +66,9 @@ die dauerhafte Erfassung auf GitHub Pages.
 
 Der Workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml) läuft bei
 Pushes (außer auf den Datenbranch `coverage-history`), Pull Requests und
-manuellen Starts. Er baut im veröffentlichten Java-25-CI-Image, führt den
-Gradle-Build aus und stellt Test- und JaCoCo-Berichte als Artefakte bereit.
+manuellen Starts. Er baut im selben freigegebenen Java-25-Devcontainer-Image
+wie die lokale Umgebung, führt den Gradle-Build aus und stellt Test- und
+JaCoCo-Berichte als Artefakte bereit.
 
 Nach einem erfolgreichen Push auf `main` ergänzt der zweite Job genau einen
 Messpunkt pro Commit im separaten Branch `coverage-history` und veröffentlicht
@@ -82,8 +83,8 @@ kann den Repository-Ordner direkt mit **Dev Containers: Reopen in Container**
 Start führt `postCreateCommand` den vollständigen Build aus. Java- und
 Gradle-Erweiterungen werden automatisch installiert.
 
-Erstellung, lokale Prüfung und die zwei Bedeutungen von „Pushen“
-(Git-Konfiguration und optionales GHCR-Image) sind in
+Erstellung, lokale Prüfung, SemVer-Freigabe, GHCR-Push und automatische
+Versions-PRs sind in
 [DEVCONTAINER.md](DEVCONTAINER.md) dokumentiert.
 
 ## Weitere Dokumentation
