@@ -54,7 +54,7 @@ jobs:
           tags: tictactest-devcontainer:validation
 
   publish:
-    if: github.event_name == 'release'
+    if: github.event_name == 'release' && startsWith(github.event.release.tag_name, 'devcontainer-v') && !github.event.release.prerelease
     runs-on: ubuntu-latest
     permissions:
       contents: write
