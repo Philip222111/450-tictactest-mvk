@@ -16,13 +16,8 @@ class UpdateDevcontainerVersionTest(unittest.TestCase):
         self.temporary_directory = tempfile.TemporaryDirectory()
         self.repository = Path(self.temporary_directory.name)
         (self.repository / ".devcontainer").mkdir()
-        (self.repository / ".github" / "workflows").mkdir(parents=True)
         (self.repository / ".devcontainer" / "devcontainer.json").write_text(
             json.dumps({"name": "test", "build": {"dockerfile": "Dockerfile"}}),
-            encoding="utf-8",
-        )
-        (self.repository / ".github" / "workflows" / "ci.yml").write_text(
-            f"container:\n  image: {IMAGE}:latest\n",
             encoding="utf-8",
         )
 
@@ -30,8 +25,8 @@ class UpdateDevcontainerVersionTest(unittest.TestCase):
         """Remove the isolated test repository."""
         self.temporary_directory.cleanup()
 
-    def test_updates_local_and_ci_image_to_same_version(self) -> None:
-        """Both consumers must use the released immutable SemVer tag."""
+    def test_updates_local_image_to_released_version(self) -> None:
+        """The local environment must use the released immutable SemVer tag."""
         update("v1.2.3", self.repository)
 
         configuration = json.loads(
@@ -39,13 +34,8 @@ class UpdateDevcontainerVersionTest(unittest.TestCase):
                 encoding="utf-8"
             )
         )
-        workflow = (
-            self.repository / ".github" / "workflows" / "ci.yml"
-        ).read_text(encoding="utf-8")
-
         self.assertNotIn("build", configuration)
         self.assertEqual(f"{IMAGE}:v1.2.3", configuration["image"])
-        self.assertIn(f"image: {IMAGE}:v1.2.3", workflow)
 
     def test_rejects_non_semantic_version(self) -> None:
         """Mutable tags such as latest must never be selected by the updater."""

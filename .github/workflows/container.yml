@@ -129,7 +129,7 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           branch="automation/devcontainer-$VERSION"
           git checkout -b "$branch"
-          git add .devcontainer/devcontainer.json .github/workflows/ci.yml
+          git add .devcontainer/devcontainer.json
           git commit -m "Use released devcontainer $VERSION"
           git push --set-upstream origin "$branch"
           echo "branch=$branch" >> "$GITHUB_ENV"
