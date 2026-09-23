@@ -15,37 +15,37 @@ import ch.bbw.m450.tictactoe.TicTacToePlayer.Stone;
 
 class TicTacToeMainTest implements WithAssertions {
 
-    // Testdaten
+    // Fixture: Jeder Test beginnt mit einem neu erzeugten, vollständig leeren Board.
     private Stone[] emptyBoard;
 
-    // Vorbereitung
+    // Vorbereitung der Fixture vor jeder einzelnen Testausführung.
     @BeforeEach
     void setUp() {
         emptyBoard = board("... ... ...");
     }
 
-    // Gewinnvarianten
+    // Parametrisierte Positivfälle decken alle acht möglichen Gewinnlinien ab.
     @ParameterizedTest(name = "{0}")
     @MethodSource("winningBoards")
     void detectsWinningBoards(String description, String representation, Stone winner) {
         assertWinner(board(representation), winner);
     }
 
-    // Leeres Spielfeld
+    // Auf einem leeren Spielfeld darf keiner der beiden Steine gewinnen.
     @Test
     void noWinnerOnEmptyBoard() {
         assertNoWinner(emptyBoard, Stone.CROSS);
         assertNoWinner(emptyBoard, Stone.CIRCLE);
     }
 
-    // Gegenprobe
+    // Parametrisierte Gegenproben verhindern falsch-positive Gewinnerkennungen.
     @ParameterizedTest(name = "{0}")
     @MethodSource("nonWinningBoards")
     void rejectsBoardsWithoutWinner(String description, String representation, Stone stone) {
         assertNoWinner(board(representation), stone);
     }
 
-    // Testfälle
+    // Datenquelle: drei Reihen, drei Spalten und zwei Diagonalen.
     private static Stream<Arguments> winningBoards() {
         return Stream.of(
                 Arguments.of("X gewinnt oben", "XXX OO. ...", Stone.CROSS),
@@ -60,6 +60,7 @@ class TicTacToeMainTest implements WithAssertions {
     }
 
     private static Stream<Arguments> nonWinningBoards() {
+        // Diese Stellungen enthalten keine vollständige Linie für den geprüften Stein.
         return Stream.of(
                 Arguments.of("X hat nur zwei Steine", "XX. OO. ...", Stone.CROSS),
                 Arguments.of("O hat nur zwei Steine", "XO. XO. ...", Stone.CIRCLE),
@@ -67,17 +68,17 @@ class TicTacToeMainTest implements WithAssertions {
         );
     }
 
-    // Siegerprüfung
+    // Gemeinsamer Assertion-Helper für alle positiven Testdaten.
     private void assertWinner(Stone[] board, Stone stone) {
         assertThat(isWin(board, stone)).isTrue();
     }
 
-    // Verliererprüfung
+    // Gemeinsamer Assertion-Helper für alle negativen Testdaten.
     private void assertNoWinner(Stone[] board, Stone stone) {
         assertThat(isWin(board, stone)).isFalse();
     }
 
-    // Spielfeldumwandlung
+    // Wandelt X, O und Punkt aus der lesbaren Darstellung in das interne Array um.
     private Stone[] board(String representation) {
         var cleanedBoard = representation.replace(" ", "");
         assertThat(cleanedBoard)

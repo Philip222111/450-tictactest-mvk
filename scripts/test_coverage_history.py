@@ -10,6 +10,7 @@ from coverage_history import read_coverage, update
 
 class CoverageHistoryTest(unittest.TestCase):
     def test_history_preserves_commits_and_deduplicates_reruns(self):
+        # Das temporäre Verzeichnis isoliert Bericht und Website vom echten Repository.
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             report = root / 'report.xml'
@@ -18,6 +19,7 @@ class CoverageHistoryTest(unittest.TestCase):
                 <counter type="BRANCH" covered="1" missed="1"/></report>''')
             site = root / 'site'
             with patch.dict(os.environ, COVERAGE_COMMIT='a' * 40, COVERAGE_RUN='10'):
+                # Der doppelte Aufruf simuliert einen erneut gestarteten Workflow.
                 update(report, site)
                 update(report, site)
             with patch.dict(os.environ, COVERAGE_COMMIT='b' * 40, COVERAGE_RUN='11'):
@@ -25,6 +27,7 @@ class CoverageHistoryTest(unittest.TestCase):
             with patch.dict(os.environ, COVERAGE_COMMIT='c' * 40, COVERAGE_RUN='9'):
                 update(report, site)
             history = json.loads((site / 'coverage-history/history.json').read_text())
+            # Run 9 wurde zuletzt verarbeitet, muss aber chronologisch zuerst erscheinen.
             self.assertEqual(len(history), 3)
             self.assertEqual([point['run_id'] for point in history], [9, 10, 11])
             self.assertEqual(history[1]['instruction'], 75)
@@ -38,6 +41,7 @@ class CoverageHistoryTest(unittest.TestCase):
                     update(report, site)
 
     def test_no_branches_and_empty_report(self):
+        # Ein Bericht ohne Branches ist erlaubt; ein Bericht ohne Instructions nicht.
         with tempfile.TemporaryDirectory() as temp:
             report = Path(temp) / 'report.xml'
             report.write_text('<report><counter type="INSTRUCTION" covered="0" missed="8"/></report>')

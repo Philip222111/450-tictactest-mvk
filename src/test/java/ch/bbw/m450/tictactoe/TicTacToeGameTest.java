@@ -22,6 +22,7 @@ import ch.bbw.m450.tictactoe.TicTacToePlayer.Stone;
 
 class TicTacToeGameTest implements WithAssertions {
 
+    // Diese Fixture fängt die reguläre Spielausgabe ab und hält den Testbericht sauber.
     private PrintStream originalOut;
     private ByteArrayOutputStream output;
 
@@ -39,6 +40,7 @@ class TicTacToeGameTest implements WithAssertions {
 
     @Test
     void playsAlternatingTurnsUntilCrossWins() {
+        // Die festgelegten Züge erzeugen nach fünf Runden die obere X-Reihe.
         var xPlayer = new ScriptedPlayer(0, 1, 2);
         var oPlayer = new ScriptedPlayer(3, 4);
 
@@ -54,6 +56,7 @@ class TicTacToeGameTest implements WithAssertions {
 
     @Test
     void circleCanWinAfterCrossStarts() {
+        // O gewinnt in der mittleren Reihe, obwohl X regelkonform beginnt.
         assertThat(play(
                 new ScriptedPlayer(0, 1, 8),
                 new ScriptedPlayer(3, 4, 5)))
@@ -62,6 +65,7 @@ class TicTacToeGameTest implements WithAssertions {
 
     @Test
     void nineValidMovesWithoutWinningLineAreADraw() {
+        // Die Zugfolge füllt alle Felder, ohne eine der acht Gewinnlinien zu bilden.
         assertThat(play(
                 new ScriptedPlayer(0, 2, 3, 7, 8),
                 new ScriptedPlayer(1, 4, 5, 6)))
@@ -72,6 +76,7 @@ class TicTacToeGameTest implements WithAssertions {
     @ParameterizedTest(name = "position {0} is outside the board")
     @ValueSource(ints = {-1, TicTacToeMain.BOARD_SIZE})
     void rejectsMovesOutsideTheBoard(int position) {
+        // Geprüft werden die beiden direkten Grenzen außerhalb des Bereichs 0 bis 8.
         assertThatThrownBy(() -> play(new ScriptedPlayer(position), new ScriptedPlayer(0)))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("cannot play to position " + position);
@@ -79,6 +84,7 @@ class TicTacToeGameTest implements WithAssertions {
 
     @Test
     void rejectsMovesToAnOccupiedField() {
+        // Beide Spieler wählen Feld 0; der zweite Zug muss deshalb scheitern.
         assertThatThrownBy(() -> play(new ScriptedPlayer(0), new ScriptedPlayer(0)))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("cannot play to position 0");
@@ -86,6 +92,7 @@ class TicTacToeGameTest implements WithAssertions {
 
     @Test
     void rejectsTheSamePlayerInstanceForBothColors() {
+        // Die Identitätsprüfung verhindert widersprüchliche X- und O-Rollen.
         var player = new ScriptedPlayer(0);
 
         assertThatIllegalArgumentException()
@@ -95,12 +102,17 @@ class TicTacToeGameTest implements WithAssertions {
 
     @Test
     void playersReceiveDefensiveBoardCopies() {
+        // Beide Testspieler manipulieren ihre Kopie; der interne Zustand bleibt gültig.
         assertThat(play(
                 new ScriptedPlayer(true, 0, 2, 3, 7, 8),
                 new ScriptedPlayer(true, 1, 4, 5, 6)))
                 .isNull();
     }
 
+    /**
+     * Test-Helper, der deterministische Züge liefert und alle Aufrufe protokolliert.
+     * Optional verändert er das empfangene Board, um die defensive Kopie zu prüfen.
+     */
     private static final class ScriptedPlayer implements TicTacToePlayer {
         private final boolean mutateReceivedBoard;
         private final int[] moves;
@@ -119,11 +131,16 @@ class TicTacToeGameTest implements WithAssertions {
 
         @Override
         public int play(Stone[] board, Stone colorToPlay) {
+            // Zuerst wird der unveränderte Aufrufzustand für spätere Assertions gesichert.
             colors.add(colorToPlay);
             boards.add(Arrays.copyOf(board, board.length));
+
+            // Eine absichtliche Manipulation darf nur die vom Spiel erhaltene Kopie treffen.
             if (mutateReceivedBoard) {
                 Arrays.fill(board, colorToPlay);
             }
+
+            // Jeder Aufruf verbraucht genau einen Zug aus dem Testskript.
             return moves[nextMove++];
         }
     }
