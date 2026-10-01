@@ -14,7 +14,7 @@ import ch.bbw.m450.tictactoe.TicTacToePlayer;
 	@Override
 	public int play(Stone[] board, Stone colorToPlay) {
 		// Zeigt den aktuellen Stand und liest genau eine Positionsnummer ein.
-<span class="nc" id="L17">		System.out.println(TicTacToeMain.toString(board) + &quot;where to to put the next &quot; + colorToPlay + &quot;? (0-8): &quot;);</span>
+<span class="nc" id="L17">		System.out.println(TicTacToeMain.toString(board) + &quot;Where to put the next &quot; + colorToPlay + &quot;? (0-8): &quot;);</span>
 <span class="nc" id="L18">		var scanner = new Scanner(System.in, StandardCharsets.UTF_8);</span>
 <span class="nc" id="L19">		return Integer.parseInt(scanner.nextLine());</span>
 	}
