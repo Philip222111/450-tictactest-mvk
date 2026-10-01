@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.0.1 - 2026-09-23
+## 1.0.1 - 2026-10-01
 
 ### Added
 - Keine neuen Spielfunktionen.
