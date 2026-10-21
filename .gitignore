@@ -21,3 +21,6 @@ __pycache__/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Generated IDE bytecode is never source.
+bin/

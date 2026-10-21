@@ -17,8 +17,8 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
     container:
-      # stable wird ausschließlich durch ein geprüftes GitHub-Release verschoben.
-      image: ghcr.io/philip222111/450-tictactest-mvk-devcontainer:stable
+      # Dieser unveränderliche SemVer-Tag wird nur durch den Release-PR aktualisiert.
+      image: ghcr.io/philip222111/450-tictactest-mvk-devcontainer:v1.0.1
       # GitHub-Actions benötigen Schreibzugriff auf die gemounteten Runner-Pfade.
       options: --user root
       credentials:
@@ -36,7 +36,7 @@ jobs:
         run: java -version
 
       - name: Projekt bauen und Tests ausführen
-        run: bash gradlew --no-daemon -Dorg.gradle.java.installations.paths="$JAVA_HOME" build
+        run: bash gradlew --no-daemon -Dorg.gradle.java.installations.paths="$JAVA_HOME" build pitest
 
       - name: Testberichte bereitstellen
         if: ${{ !cancelled() }}
@@ -55,8 +55,26 @@ jobs:
           path: build/reports/jacoco/test/
           if-no-files-found: error
 
+      - name: Mutationstest-Bericht bereitstellen
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: pitest-report
+          path: build/reports/pitest/
+          if-no-files-found: error
+
+  infrastructure-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Infrastrukturtests ausfuehren
+        run: python -m unittest discover -s scripts -p 'test_*.py'
+
   coverage-pages:
-    needs: build-and-test
+    needs: [build-and-test, infrastructure-tests]
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     permissions:

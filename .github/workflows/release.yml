@@ -57,7 +57,7 @@ jobs:
           java-version: '25'
 
       - name: Tests und reproduzierbares JAR bauen
-        run: bash gradlew --no-daemon --no-build-cache -Dorg.gradle.java.installations.paths="$JAVA_HOME" clean build
+        run: bash gradlew --no-daemon --no-build-cache -Dorg.gradle.java.installations.paths="$JAVA_HOME" clean build pitest
 
       - name: Ausführbares JAR testen und Prüfsumme erstellen
         run: |

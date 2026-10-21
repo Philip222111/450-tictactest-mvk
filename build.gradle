@@ -2,6 +2,7 @@
 plugins {
     id 'java'
     id 'jacoco'
+    id 'info.solidsoft.pitest' version '1.19.0'
 }
 
 // Eine Quelle für lokale Builds, JAR-Namen und den überprüften Release-Tag.
@@ -37,6 +38,8 @@ repositories {
 dependencies {
     testImplementation 'org.assertj:assertj-core:3.27.7'
     testImplementation 'org.junit.jupiter:junit-jupiter:6.1.3'
+    testImplementation 'org.junit-pioneer:junit-pioneer:2.3.0'
+    testImplementation 'net.jqwik:jqwik:1.10.2'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
@@ -58,4 +61,33 @@ jacocoTestReport {
         xml.required = true
         html.required = true
     }
+}
+
+// Das Gate gilt für sämtliche Produktionsklassen und ist Teil jedes Builds.
+jacocoTestCoverageVerification {
+    dependsOn test
+    violationRules {
+        rule {
+            limit {
+                counter = 'BRANCH'
+                value = 'COVEREDRATIO'
+                minimum = 0.90
+            }
+        }
+    }
+}
+
+check {
+    dependsOn jacocoTestCoverageVerification
+}
+
+pitest {
+    pitestVersion = '1.30.1'
+    junit5PluginVersion = '1.2.3'
+    targetClasses = ['ch.bbw.m450.tictactoe.*']
+    targetTests = ['ch.bbw.m450.tictactoe.*Test']
+    outputFormats = ['HTML', 'XML']
+    timestampedReports = false
+    threads = 2
+    timeoutConstInMillis = 10000
 }

@@ -3,9 +3,10 @@
 ## Entwicklungsumgebung
 
 Die Definition unter `.devcontainer/` stellt für lokale Entwicklung und CI
-dieselbe Umgebung bereit:
+dieselbe freigegebene Image-Version bereit. Der Dockerfile-Stand wird erst
+nach einem neuen Container-Release von den gepinnten Verbrauchern verwendet:
 
-- Eclipse Temurin JDK 25 auf Alpine Linux,
+- Eclipse Temurin JDK 25 auf Ubuntu Noble (neuer Dockerfile-Stand),
 - Gradle 9.7 sowie den projektspezifischen Gradle Wrapper,
 - JUnit Jupiter 6 als Gradle-Testabhängigkeit,
 - Benutzer `vscode` mit UID und GID `1000:1000`,
@@ -32,8 +33,10 @@ Voraussetzungen sind Docker Desktop, VS Code und die Erweiterung
    `./gradlew build` prüfen.
 
 Nach der Freigabe einer neuen Version aktualisiert ein automatischer Pull
-Request das Feld `image` in `.devcontainer/devcontainer.json`. Nach dem
-Merge lädt **Dev Containers: Rebuild Container** die neue Version.
+Request `.devcontainer/IMAGE_VERSION`, das Feld `image` in
+`.devcontainer/devcontainer.json` und alle Workflow-Verbraucher. Nach dem Merge
+müssen Entwickler `git pull --ff-only` und anschließend **Dev Containers:
+Rebuild Container** ausführen.
 
 ## Lokaler Build der Container-Definition
 
@@ -73,26 +76,22 @@ Devcontainer-Versionen verwenden Semantic Versioning:
 
 Ein Image gilt nur dann als freigegeben, wenn ein GitHub-Release mit einem Tag
 der Form `devcontainer-vX.Y.Z` veröffentlicht wurde. Der Release-Commit muss
-Bestandteil von `main` sein. Branch-Pushes und Pull Requests bauen das
-Dockerfile lediglich zur Validierung und erhalten keine Registry-Tags.
+Bestandteil von `main` sein. Jeder `main`-Push erhält einen nicht freigegebenen
+`sha-<commit>`-Tag; Pull Requests bauen nur zur Validierung und pushen nichts.
 
-Bei einer Freigabe veröffentlicht GitHub Actions vier Tags:
+GitHub Actions veröffentlicht zwei klar getrennte Tag-Arten:
 
 ```text
 ghcr.io/philip222111/450-tictactest-mvk-devcontainer:vX.Y.Z
-ghcr.io/philip222111/450-tictactest-mvk-devcontainer:stable
-ghcr.io/philip222111/450-tictactest-mvk-devcontainer:latest
 ghcr.io/philip222111/450-tictactest-mvk-devcontainer:sha-<commit>
 ```
 
-`vX.Y.Z` und `sha-...` sind unveränderliche Referenzen. `stable` und
-`latest` werden ausschließlich bei einer offiziellen Freigabe verschoben.
-Nach dem Upload und einem Java-/Gradle-Funktionstest erstellt der Workflow
-automatisch einen Pull Request. Dieser setzt die lokale Umgebung auf den
-unveränderlichen SemVer-Tag. Die CI verwendet den Tag `stable`, der
-ausschließlich im selben geprüften Release-Schritt verschoben wird. Damit
-verwenden CI und lokale Entwicklung die neueste freigegebene Image-Version,
-ohne ungeprüfte Images zu übernehmen.
+`sha-...` ist ein nicht freigegebener Kandidat jedes `main`-Commits. `vX.Y.Z`
+ist die offizielle, unveränderliche Referenz. Bewegliche Tags wie `stable` und
+`latest` werden nicht verwendet. Nach dem Upload erstellt der Workflow einen
+Pull Request, der lokale Umgebung und CI gemeinsam auf denselben SemVer-Tag
+setzt. Details und Testbefehle stehen in
+[CONTAINER_BUILD_WORKFLOW.md](CONTAINER_BUILD_WORKFLOW.md).
 
 Für Build und Push wird nur das kurzlebige `GITHUB_TOKEN` mit
 `packages: write` verwendet. Es werden keine Zugangsdaten eingecheckt.
