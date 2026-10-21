@@ -3,7 +3,8 @@
     "strict": true,
     "contexts": [
       "build-and-test",
-      "infrastructure-tests"
+      "infrastructure-tests",
+      "configuration"
     ]
   },
   "enforce_admins": true,

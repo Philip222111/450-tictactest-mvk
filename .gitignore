@@ -24,3 +24,6 @@ yarn-error.log*
 
 # Generated IDE bytecode is never source.
 bin/
+
+# Local assignment reference; not an application or test resource.
+/src/test/java/ch/bbw/m450/tictactoe/*.pdf

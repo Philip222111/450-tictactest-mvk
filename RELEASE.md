@@ -104,5 +104,6 @@ der Veröffentlichung.
 Der zweite Release 1.0.1 korrigiert den Tippfehler der Eingabeaufforderung und
 belegt denselben Ablauf erneut mit einem anderen Commit.
 
-Der lokale Kandidat 1.1.0 ergaenzt PerfectPlayer als kompatible Funktion.
-Er ist erst nach Merge und Tag-Push ein veroeffentlichter Release.
+Release 1.1.0 ergaenzt PerfectPlayer als kompatible Funktion. Der Tag liegt
+auf einem geprueften main-Commit; Build, PIT, JAR-Smoke-Test und erneuter
+Download mit Pruefsummen- und Starttest waren erfolgreich. Links: ABGABE.md.
