@@ -37,3 +37,6 @@ erfolgreichen Checks muss Squash-Merge moeglich sein. Dies erst nach dem finalen
 Push pruefen. Ein bloss gruener Workflow ohne Schutzregel erzwingt keinen Gate.
 
 API-Referenz: https://docs.github.com/en/rest/branches/branch-protection
+
+Das Repository bleibt auf ausdruecklichen Wunsch oeffentlich. Dies weicht von
+der Anforderung einer privaten Abgabe ab. Die Schutzregeln bleiben aktiv.
