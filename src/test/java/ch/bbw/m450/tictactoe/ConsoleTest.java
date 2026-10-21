@@ -33,7 +33,9 @@ class ConsoleTest {
     @Test
     @StdIo("abc")
     void rejectsNonNumericInput() {
-        assertThatThrownBy(() -> new HumanPlayer().play(board("........."), CROSS))
+        var player = new HumanPlayer();
+        var position = board(".........");
+        assertThatThrownBy(() -> player.play(position, CROSS))
                 .isInstanceOf(NumberFormatException.class);
     }
 
@@ -41,7 +43,9 @@ class ConsoleTest {
     @StdIo("")
     void rejectsEndOfInput() throws java.io.IOException {
         System.in.readAllBytes();
-        assertThatThrownBy(() -> new HumanPlayer().play(board("........."), CROSS))
+        var player = new HumanPlayer();
+        var position = board(".........");
+        assertThatThrownBy(() -> player.play(position, CROSS))
                 .isInstanceOf(NoSuchElementException.class);
     }
 
@@ -73,7 +77,9 @@ class ConsoleTest {
     @Test
     @StdIo
     void printsCurrentBoardWhenRejectingAnIllegalMove(StdOut out) {
-        assertThatThrownBy(() -> TicTacToeMain.play(sequence(new int[] {-1}), new GreedyPlayer()))
+        var illegalPlayer = sequence(new int[] {-1});
+        var opponent = new GreedyPlayer();
+        assertThatThrownBy(() -> TicTacToeMain.play(illegalPlayer, opponent))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("cannot play to position -1");
         assertThat(out.capturedString()).contains(TicTacToeMain.toString(board(".........")));

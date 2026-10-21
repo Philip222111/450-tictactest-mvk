@@ -195,3 +195,13 @@ ubuntu wird in vscode umbenannt, da UID 1000 im Basisimage bereits existiert.
 Die gepinnten GHCR-Verbraucher bleiben bis zum naechsten Container-Release auf
 v1.0.1. Der lokale neue Dockerfile ist noch kein veroeffentlichtes GHCR-Image.
 Aktueller Remote-Nachweis und Release-Links: ABGABE.md.
+
+## Zentrale Version ohne Workflow-Schreibrechte
+
+Der CI-Job configuration liest IMAGE_VERSION und liefert den vollstaendigen
+Image-Namen als Job-Output. build-and-test verwendet diesen Output. Der
+Versions-PR muss deshalb keine Workflow-Datei mehr aendern. Dies vermeidet
+die GitHub-Beschraenkung, dass GITHUB_TOKEN keine Workflows umschreiben darf.
+Beim ersten realen Release v1.0.2 waren Image-Build, GHCR-Push und Digest-Test
+erfolgreich, der Versions-PR scheiterte an genau dieser Beschraenkung.
+Ein neuer Release nach dieser Korrektur prueft den gesamten Ablauf erneut.

@@ -14,11 +14,29 @@ permissions:
   packages: read
 
 jobs:
+  configuration:
+    runs-on: ubuntu-latest
+    outputs:
+      image: ${{ steps.image.outputs.image }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Freigegebene Image-Version lesen
+        id: image
+        env:
+          DEVCONTAINER_IMAGE: ghcr.io/philip222111/450-tictactest-mvk-devcontainer
+        shell: bash
+        run: |
+          set -euo pipefail
+          version=$(cat .devcontainer/IMAGE_VERSION)
+          [[ "$version" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]
+          echo "image=$DEVCONTAINER_IMAGE:$version" >> "$GITHUB_OUTPUT"
+
   build-and-test:
+    needs: configuration
     runs-on: ubuntu-latest
     container:
       # Dieser unveränderliche SemVer-Tag wird nur durch den Release-PR aktualisiert.
-      image: ghcr.io/philip222111/450-tictactest-mvk-devcontainer:v1.0.1
+      image: ${{ needs.configuration.outputs.image }}
       # GitHub-Actions benötigen Schreibzugriff auf die gemounteten Runner-Pfade.
       options: --user root
       credentials:
