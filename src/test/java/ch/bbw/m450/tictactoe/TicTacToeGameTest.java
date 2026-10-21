@@ -18,7 +18,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import ch.bbw.m450.tictactoe.TicTacToePlayer.Stone;
 
 class TicTacToeGameTest implements WithAssertions {
 

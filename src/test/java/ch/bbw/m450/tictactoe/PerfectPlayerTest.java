@@ -88,7 +88,8 @@ class PerfectPlayerTest {
     @ParameterizedTest
     @CsvSource({"XXXOO...., CROSS", "XX.OOOX.., CIRCLE", "XOXOOXXXO, CROSS"})
     void rejectsFinishedGames(String representation, Stone color) {
-        assertThatThrownBy(() -> player.play(board(representation), color))
+        var position = board(representation);
+        assertThatThrownBy(() -> player.play(position, color))
                 .isInstanceOf(IllegalStateException.class);
     }
 

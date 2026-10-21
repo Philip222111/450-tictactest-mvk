@@ -9,6 +9,8 @@ import ch.bbw.m450.tictactoe.TicTacToePlayer;
 /**
  * Simple human-player taking input from stdin.
  */
+// The board and prompt are console UI, not diagnostic logging.
+@SuppressWarnings("java:S106")
 public class HumanPlayer implements TicTacToePlayer {
 
     @Override

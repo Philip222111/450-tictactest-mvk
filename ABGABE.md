@@ -45,3 +45,17 @@ Notebook mit lokalem Abgabestand mitbringen. Die Note gilt fuer Modul 450 und 32
 [Pruefungsvorbereitung](PRUEFUNG.md) beschreiben die Anforderungen.
 Die oben genannten Remote-Links sind Zieladressen, kein Nachweis eines
 bereits erfolgreich veroeffentlichten aktuellen Stands.
+
+## Verifizierte Abnahme am 21. Oktober 2026
+
+- [PR #7](https://github.com/Philip222111/450-tictactest-mvk/pull/7) ist nach erfolgreichen Checks nach main gemergt.
+- [main-CI](https://github.com/Philip222111/450-tictactest-mvk/actions/runs/39576269949) erfolgreich, einschliesslich Pages-Verlauf und JUnit-/JaCoCo-/PIT-Artefakten.
+- 112 erfolgreiche Tests, 100 % Branch-Coverage und 79/79 erkannte Mutationen.
+- SonarLint Language Server 6.1.1.79808: 13 Java-Dateien, 0 offene Findings;
+  zwei fachlich begruendete Regel-Ausnahmen sind im Code und Testkonzept erlaeutert.
+- Main-Ruleset aktiv: PR, beide Pflichtchecks, aktueller Branch, geloeste
+  Review-Kommentare, lineare Historie; Force-Push und Loeschen gesperrt.
+- Das Repository bleibt auf ausdruecklichen Wunsch oeffentlich. Die Anforderung
+  einer privaten Abgabe ist damit bewusst nicht erfuellt.
+
+Weitere Release-Links stehen nach erfolgreicher Freigabe unten.

@@ -78,10 +78,18 @@ Quelle: https://repo.maven.apache.org/maven2/
 Der erneute Linux-Lauf im lokal gebauten Devcontainer mit Java 25.0.4.1 und
 Gradle 9.7.0 bestand `clean build pitest`. Zusaetzlich bestanden die fuenf
 Python-Tests, actionlint (ohne ShellCheck) und der JAR-Smoke-Test fuer 1.1.0.
-SonarQube for IDE (SonarLint) ist als Devcontainer-Erweiterung vorgemerkt;
-ein warnungsfreier IDE-Analyselauf ist damit noch nicht nachgewiesen.
+SonarQube for IDE 6.1.1 ist installiert und im Devcontainer vorgemerkt.
+Die Java-Analyse erfolgt mit dessen Language Server 6.1.1.79808 und den
+mitgelieferten Java-Analyzern, Standalone-Regeln sowie Java-25-Konfiguration.
+Begruendete Ausnahmen stehen direkt im Code: S106 fuer die beabsichtigte
+Konsolenoberflaeche und S1172 fuer die unveraenderte JVM-main-Signatur.
+Exception-Tests bereiten Daten ausserhalb des geprueften Lambda-Aufrufs vor,
+damit nur die fachlich erwartete Fehlerquelle im Lambda liegt.
 
 Im Windows-OneDrive-Verzeichnis traten bei spaeteren Wiederholungen Dateisperren
 und nicht lesbare generierte Klassen auf. Der frische Linux-Lauf kopierte die
 Quellen aus einem nur lesbar gemounteten Ordner in /tmp/project und vermied
 so synchronisierte Build-Ausgaben. Alternativ lokal ausserhalb OneDrive bauen.
+
+SonarLint-Abnahme am 21. Oktober 2026: alle 13 Java-Dateien analysiert,
+0 offene Findings nach den oben begruendeten gezielten Ausnahmen.
