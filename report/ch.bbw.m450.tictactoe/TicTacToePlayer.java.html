@@ -2,25 +2,25 @@
 
 public interface TicTacToePlayer {
 
-	/**
-	 * Bestimmt den nächsten Zug auf einem teilweise belegten Spielfeld.
-	 *
-	 * @param board aktuelle, defensive Kopie des Spielfelds
-	 * @param colorToPlay eigener Spielstein
-	 * @return gewählte Position von 0 bis 8; 0 ist links oben
-	 */
-	int play(Stone[] board, Stone colorToPlay);
+    /**
+     * Bestimmt den nächsten Zug auf einem teilweise belegten Spielfeld.
+     *
+     * @param board aktuelle, defensive Kopie des Spielfelds
+     * @param colorToPlay eigener Spielstein
+     * @return gewählte Position von 0 bis 8; 0 ist links oben
+     */
+    int play(Stone[] board, Stone colorToPlay);
 
-	/**
-	 * Repräsentiert die beiden möglichen Zustände eines belegten Felds.
-	 */
-<span class="fc" id="L17">	enum Stone {</span>
-<span class="fc" id="L18">		CROSS, CIRCLE;</span>
+    /**
+     * Repräsentiert die beiden möglichen Zustände eines belegten Felds.
+     */
+<span class="fc" id="L17">    enum Stone {</span>
+<span class="fc" id="L18">        CROSS, CIRCLE;</span>
 
-		public Stone opponent() {
-			// Für zwei mögliche Steine genügt die direkte Umschaltung.
-<span class="fc bfc" id="L22" title="All 2 branches covered.">			return this == Stone.CROSS ? Stone.CIRCLE : Stone.CROSS;</span>
-		}
-	}
+        public Stone opponent() {
+            // Für zwei mögliche Steine genügt die direkte Umschaltung.
+<span class="fc bfc" id="L22" title="All 2 branches covered.">            return this == Stone.CROSS ? Stone.CIRCLE : Stone.CROSS;</span>
+        }
+    }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

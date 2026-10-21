@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PerfectPlayer.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">450-tictactest-mvk</a> &gt; <a href="index.source.html" class="el_package">ch.bbw.m450.tictactoe.players</a> &gt; <span class="el_source">PerfectPlayer.java</span></div><h1>PerfectPlayer.java</h1><pre class="source lang-java linenums">package ch.bbw.m450.tictactoe.players;
+
+import java.util.Arrays;
+import java.util.Objects;
+
+import ch.bbw.m450.tictactoe.TicTacToeMain;
+import ch.bbw.m450.tictactoe.TicTacToePlayer;
+
+/** Vollständige Minimax-Suche; gleiche Bewertungen bevorzugen den kleineren Index. */
+<span class="fc" id="L10">public final class PerfectPlayer implements TicTacToePlayer {</span>
+    @Override
+    public int play(Stone[] board, Stone colorToPlay) {
+<span class="fc" id="L13">        Objects.requireNonNull(board, &quot;board&quot;);</span>
+<span class="fc" id="L14">        Objects.requireNonNull(colorToPlay, &quot;colorToPlay&quot;);</span>
+<span class="fc bfc" id="L15" title="All 2 branches covered.">        if (board.length != TicTacToeMain.BOARD_SIZE) {</span>
+<span class="fc" id="L16">            throw new IllegalArgumentException(&quot;A board must contain exactly nine fields&quot;);</span>
+        }
+<span class="fc bfc" id="L18" title="All 4 branches covered.">        if (TicTacToeMain.isWin(board, Stone.CROSS) || TicTacToeMain.isWin(board, Stone.CIRCLE)) {</span>
+<span class="fc" id="L19">            throw new IllegalStateException(&quot;game is already over&quot;);</span>
+        }
+<span class="fc" id="L21">        var position = Arrays.copyOf(board, board.length);</span>
+<span class="fc" id="L22">        var bestMove = -1;</span>
+<span class="fc" id="L23">        var bestScore = -11;</span>
+<span class="fc bfc" id="L24" title="All 2 branches covered.">        for (var index = 0; index &lt; position.length; index++) {</span>
+<span class="fc bfc" id="L25" title="All 2 branches covered.">            if (position[index] == null) {</span>
+<span class="fc" id="L26">                position[index] = colorToPlay;</span>
+<span class="fc" id="L27">                var score = -evaluate(position, colorToPlay.opponent(), 1);</span>
+<span class="fc" id="L28">                position[index] = null;</span>
+<span class="fc bfc" id="L29" title="All 2 branches covered.">                if (score &gt; bestScore) {</span>
+<span class="fc" id="L30">                    bestScore = score;</span>
+<span class="fc" id="L31">                    bestMove = index;</span>
+                }
+            }
+        }
+<span class="fc bfc" id="L35" title="All 2 branches covered.">        if (bestMove &lt; 0) {</span>
+<span class="fc" id="L36">            throw new IllegalStateException(&quot;cannot play at all&quot;);</span>
+        }
+<span class="fc" id="L38">        return bestMove;</span>
+    }
+
+    /** Frühe Siege und späte Niederlagen werden bevorzugt; ein Remis zählt null. */
+    private int evaluate(Stone[] board, Stone color, int depth) {
+<span class="fc bfc" id="L43" title="All 2 branches covered.">        if (TicTacToeMain.isWin(board, color.opponent())) {</span>
+<span class="fc" id="L44">            return depth - 10;</span>
+        }
+<span class="fc" id="L46">        var bestScore = -11;</span>
+<span class="fc bfc" id="L47" title="All 2 branches covered.">        for (var index = 0; index &lt; board.length; index++) {</span>
+<span class="fc bfc" id="L48" title="All 2 branches covered.">            if (board[index] == null) {</span>
+<span class="fc" id="L49">                board[index] = color;</span>
+<span class="fc" id="L50">                var score = -evaluate(board, color.opponent(), depth + 1);</span>
+<span class="fc" id="L51">                board[index] = null;</span>
+<span class="fc" id="L52">                bestScore = Math.max(bestScore, score);</span>
+            }
+        }
+<span class="fc bfc" id="L55" title="All 2 branches covered.">        return bestScore == -11 ? 0 : bestScore;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
