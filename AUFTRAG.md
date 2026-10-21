@@ -15,6 +15,6 @@ dokumentiert. Lokal erfolgreich: `gradlew.bat build pitest`.
 keine Mockingframeworks. Der aktuelle Abnahmestand steht in ABGABE.md.
 
 Weitere Nachweise: frischer Linux-Container-Build, fuenf Python-Tests,
-actionlint und JAR-Smoke-Test fuer den Releasekandidaten 1.1.0.
-Das aktive Main-Ruleset verlangt PRs und die beiden erforderlichen CI-Checks.
+actionlint und JAR-Smoke-Test fuer den Release 1.1.0.
+Das aktive Main-Ruleset verlangt PRs und die drei erforderlichen CI-Checks.
 Details stehen in BRANCH_PROTECTION.md.
