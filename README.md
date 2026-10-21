@@ -27,13 +27,13 @@ im Projekt konfigurierte Java-Toolchain bei Bedarf automatisch beziehen.
 ```sh
 git clone https://github.com/Philip222111/450-tictactest-mvk.git
 cd 450-tictactest-mvk
-./gradlew build
+./gradlew build pitest
 ```
 
 Unter Windows PowerShell lautet der letzte Befehl:
 
 ```powershell
-.\gradlew.bat build
+.\gradlew.bat build pitest
 ```
 
 Der Build lädt die Testabhängigkeiten aus Maven Central, kompiliert das Projekt,
@@ -68,7 +68,7 @@ Der Workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml) läuft bei
 Pushes (außer auf den Datenbranch `coverage-history`), Pull Requests und
 manuellen Starts. Er baut im selben freigegebenen Java-25-Devcontainer-Image
 wie die lokale Umgebung, führt den Gradle-Build aus und stellt Test- und
-JaCoCo-Berichte als Artefakte bereit.
+JaCoCo- und PIT-Berichte als Artefakte bereit.
 
 Nach einem erfolgreichen Push auf `main` ergänzt der zweite Job genau einen
 Messpunkt pro Commit im separaten Branch `coverage-history` und veröffentlicht
@@ -97,3 +97,10 @@ Versions-PRs sind in
 - [Coverage-Zeitreihe](COVERAGE.md)
 - [CI-Container und GHCR](CONTAINER_BUILD_WORKFLOW.md)
 - [Abgabenachweise](ABGABE.md)
+
+## Qualitaet und Pruefung
+
+`build` erzwingt 90 % Branch-Coverage. `pitest` fuehrt Mutationstests aus;
+jqwik prueft generierte Spielstaende und Pioneer die Konsolenein-/ausgabe.
+[Branch Protection](BRANCH_PROTECTION.md) beschreibt die erforderlichen
+GitHub-Regeln. [Pruefungsvorbereitung](PRUEFUNG.md) erklaert die Entscheidungen.

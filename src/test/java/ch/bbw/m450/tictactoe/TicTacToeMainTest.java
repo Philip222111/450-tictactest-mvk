@@ -1,5 +1,6 @@
 package ch.bbw.m450.tictactoe;
 
+import static ch.bbw.m450.tictactoe.BoardFixtures.board;
 import static ch.bbw.m450.tictactoe.TicTacToeMain.isWin;
 
 import java.util.stream.Stream;
@@ -78,26 +79,4 @@ class TicTacToeMainTest implements WithAssertions {
         assertThat(isWin(board, stone)).isFalse();
     }
 
-    // Wandelt X, O und Punkt aus der lesbaren Darstellung in das interne Array um.
-    private Stone[] board(String representation) {
-        var cleanedBoard = representation.replace(" ", "");
-        assertThat(cleanedBoard)
-                .as("A board must contain exactly nine fields")
-                .hasSize(TicTacToeMain.BOARD_SIZE);
-
-        var result = new Stone[TicTacToeMain.BOARD_SIZE];
-
-        for (var i = 0; i < cleanedBoard.length(); i++) {
-            result[i] = switch (cleanedBoard.charAt(i)) {
-                case 'X' -> Stone.CROSS;
-                case 'O' -> Stone.CIRCLE;
-                case '.' -> null;
-                default -> throw new IllegalArgumentException(
-                        "Unknown board character: " + cleanedBoard.charAt(i)
-                );
-            };
-        }
-
-        return result;
-    }
 }

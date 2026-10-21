@@ -33,7 +33,15 @@ ermöglichen diese Prüfung ohne künstlich veränderte Messdaten.
 - **Darstellung:** zwei statische SVG-Diagramme, Tabelle und Detailbericht auf GitHub Pages.
 - **Architektur:** Diagramm in `COVERAGE.md` zeigen und einen Workflow-Lauf vorführen.
 
-Das Aufgabenblatt nennt kein verbindliches Abgabeformat oder Abgabeportal.
-Die Links und das Design können dort eingereicht werden, wo die Lehrperson die
-Abgabe verlangt. Die geforderte Zusammenarbeit zu zweit und Vorstellung im Plenum
-sind von den Lernenden selbst durchzuführen.
+## Bewerteter Stand
+
+Abgabe: Sonntag, 25. Oktober 2026, 23:59 Uhr (Europe/Zurich).
+Es zaehlt ausschliesslich der zu diesem Zeitpunkt auf main gepushte Stand.
+Muendliches Code-Review: 28. Oktober oder 4. November, 10-15 Minuten.
+Notebook mit lokalem Abgabestand mitbringen. Die Note gilt fuer Modul 450 und 324.
+
+[Auftragsnachweis](AUFTRAG.md), [Testkonzept](TESTKONZEPT.md),
+[Releasekonzept](RELEASE.md), [Branch Protection](BRANCH_PROTECTION.md) und
+[Pruefungsvorbereitung](PRUEFUNG.md) beschreiben die Anforderungen.
+Die oben genannten Remote-Links sind Zieladressen, kein Nachweis eines
+bereits erfolgreich veroeffentlichten aktuellen Stands.

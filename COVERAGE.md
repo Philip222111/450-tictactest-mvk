@@ -98,5 +98,7 @@ Der Workflow kopiert zusätzlich den HTML-Detailbericht nach `report/`.
 - [deploy-pages](https://github.com/actions/deploy-pages): Berechtigungen und Environment-Konfiguration.
 
 Für die zwei Metriken genügt ein kleines Skript mit Standardbibliothek; ein
-zusätzlicher ReportGenerator ist daher nicht erforderlich. Auftrag 3 (PR-Coverage-Gate)
-ist nicht Teil dieser Umsetzung.
+zusätzlicher ReportGenerator ist daher nicht erforderlich. Das absolute PR-Coverage-Gate ist umgesetzt: `build` erzwingt mindestens
+90 % Branch-Coverage. Der erforderliche Statuscheck `build-and-test` muss
+in GitHub fuer `main` aktiviert sein (siehe BRANCH_PROTECTION.md).
+Ein Vergleich der Coverage-Differenz zum Zielbranch ist kein eigenes Gate.

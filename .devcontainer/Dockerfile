@@ -1,4 +1,4 @@
-FROM eclipse-temurin:25-jdk-alpine
+FROM eclipse-temurin:25-jdk-noble
 
 ARG GRADLE_VERSION=9.7.0
 
@@ -6,16 +6,11 @@ ARG GRADLE_VERSION=9.7.0
 LABEL org.opencontainers.image.source="https://github.com/Philip222111/450-tictactest-mvk"
 LABEL org.opencontainers.image.description="Java 25 development environment for TicTacTest"
 
-# gcompat und libstdc++ ermöglichen JavaScript-Actions im Alpine-CI-Container.
-RUN apk add --no-cache \
-        bash \
-        curl \
-        gcompat \
-        git \
-        libstdc++ \
-        openssh-client \
-        shadow \
-        unzip \
+# Ubuntu/glibc supports the Node runtime of GitHub Actions.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        bash ca-certificates curl git openssh-client unzip \
+    && rm -rf /var/lib/apt/lists/* \
     && curl --fail --location --silent --show-error \
         "https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip" \
         --output /tmp/gradle.zip \
@@ -23,8 +18,8 @@ RUN apk add --no-cache \
     && ln -s "/opt/gradle-${GRADLE_VERSION}" /opt/gradle \
     && ln -s /opt/gradle/bin/gradle /usr/local/bin/gradle \
     && rm /tmp/gradle.zip \
-    && groupadd --gid 1000 vscode \
-    && useradd --uid 1000 --gid 1000 --create-home --shell /bin/bash vscode \
+    && groupmod --new-name vscode ubuntu \
+    && usermod --login vscode --home /home/vscode --move-home --shell /bin/bash ubuntu \
     && mkdir -p /home/vscode/.gradle \
     && chown -R vscode:vscode /home/vscode \
     && printf '%s\n' \

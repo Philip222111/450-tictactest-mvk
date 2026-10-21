@@ -38,14 +38,14 @@ git pull --ff-only
 git branch --show-current
 git status --short
 git log -1 --oneline
-git tag --list v1.0.1
-git ls-remote --exit-code --tags origin refs/tags/v1.0.1
-./gradlew --no-daemon --no-build-cache clean build
-python scripts/smoke_jar.py build/libs/tictactest-1.0.1.jar
-git tag -a v1.0.1 -m "Release v1.0.1"
-git show v1.0.1
-git rev-list -n 1 v1.0.1
-git push origin v1.0.1
+git tag --list v1.1.0
+git ls-remote --exit-code --tags origin refs/tags/v1.1.0
+./gradlew --no-daemon --no-build-cache clean build pitest
+python scripts/smoke_jar.py build/libs/tictactest-1.1.0.jar
+git tag -a v1.1.0 -m "Release v1.1.0"
+git show v1.1.0
+git rev-list -n 1 v1.1.0
+git push origin v1.1.0
 ```
 
 Unter PowerShell lautet der Gradle-Befehl `.\gradlew.bat`. Bei Folgeversionen
@@ -61,7 +61,7 @@ auf genau dem mit `git log -1` geprüften Commit erstellt.
 `.github/workflows/release.yml` startet ausschließlich beim Push von `v*`.
 Er prüft das strenge Tagformat, VERSION, die Zugehörigkeit des Commits zu main
 und den datierten Changelog-Eintrag. Danach installiert er Java 25, führt
-einen frischen Gradle-Build mit allen Tests und JaCoCo aus und startet das JAR.
+einen frischen Gradle-Build mit allen Tests, JaCoCo und PIT aus und startet das JAR.
 Der Starttest spielt X auf 0, 4 und 8 gegen den Computer und erwartet einen Sieg.
 
 Erst danach erstellt der Workflow den GitHub Release mit Changelog-Auszug,
@@ -96,10 +96,13 @@ mit der heruntergeladenen .sha256-Datei vergleichen.
 
 Zur manuellen Abnahme wird das Release-Asset von der Releases-Seite in ein
 separates, leeres Verzeichnis heruntergeladen. Dort wird zuerst die SHA-256-
-Prüfsumme verglichen und anschließend `java -jar tictactest-1.0.1.jar`
+Prüfsumme verglichen und anschließend `java -jar tictactest-1.1.0.jar`
 ausgeführt. Das Spiel muss ohne Repository, Quellcode oder erneuten Build starten.
 Der Workflow automatisiert denselben Download- und Starttest unmittelbar nach
 der Veröffentlichung.
 
 Der zweite Release 1.0.1 korrigiert den Tippfehler der Eingabeaufforderung und
 belegt denselben Ablauf erneut mit einem anderen Commit.
+
+Der lokale Kandidat 1.1.0 ergaenzt PerfectPlayer als kompatible Funktion.
+Er ist erst nach Merge und Tag-Push ein veroeffentlichter Release.

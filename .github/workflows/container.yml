@@ -4,17 +4,12 @@ on:
   pull_request:
     paths:
       - '.devcontainer/**'
-      - '.github/workflows/container.yml'
+      - '.github/workflows/**'
       - 'scripts/update_devcontainer_version.py'
       - 'scripts/test_update_devcontainer_version.py'
+  # Absichtlich ohne Pfadfilter: Jeder main-Commit erhält ein SHA-Kandidatenimage.
   push:
-    branches:
-      - main
-    paths:
-      - '.devcontainer/**'
-      - '.github/workflows/container.yml'
-      - 'scripts/update_devcontainer_version.py'
-      - 'scripts/test_update_devcontainer_version.py'
+    branches: [main]
   release:
     types: [published]
   workflow_dispatch:
@@ -31,7 +26,7 @@ env:
 
 jobs:
   validate:
-    if: github.event_name != 'release'
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - name: Repository auschecken
@@ -53,35 +48,18 @@ jobs:
           push: false
           tags: tictactest-devcontainer:validation
 
-  publish:
-    if: github.event_name == 'release' && startsWith(github.event.release.tag_name, 'devcontainer-v') && !github.event.release.prerelease
+  candidate:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
       packages: write
-      pull-requests: write
     steps:
-      - name: Release und Repository auschecken
+      - name: Repository auschecken
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - name: Release-Tag validieren
-        id: version
-        env:
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
-        run: |
-          set -euo pipefail
-          if [[ ! "$RELEASE_TAG" =~ ^devcontainer-v([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
-            echo "Erwartet wird ein Tag wie devcontainer-v1.0.0." >&2
-            exit 1
-          fi
-          git fetch origin main
-          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
-            echo "Nur Commits aus main dürfen als Devcontainer veröffentlicht werden." >&2
-            exit 1
-          fi
-          echo "version=v${BASH_REMATCH[1]}" >> "$GITHUB_OUTPUT"
+      - name: Versionsaktualisierung testen
+        run: python -m unittest discover -s scripts -p 'test_update_devcontainer_version.py'
 
       - name: Docker Buildx einrichten
         uses: docker/setup-buildx-action@v4
@@ -93,8 +71,8 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Freigegebenen Devcontainer bauen und hochladen
-        id: dev-build
+      - name: SHA-Kandidatenimage bauen und hochladen
+        id: candidate-build
         uses: docker/build-push-action@v7
         with:
           context: .
@@ -102,45 +80,191 @@ jobs:
           platforms: linux/amd64
           pull: true
           push: true
-          tags: |
-            ${{ env.DEVCONTAINER_IMAGE }}:${{ steps.version.outputs.version }}
-            ${{ env.DEVCONTAINER_IMAGE }}:stable
-            ${{ env.DEVCONTAINER_IMAGE }}:latest
-            ${{ env.DEVCONTAINER_IMAGE }}:sha-${{ github.sha }}
+          tags: ${{ env.DEVCONTAINER_IMAGE }}:sha-${{ github.sha }}
 
-      - name: Veröffentlichtes Image prüfen
+      - name: Kandidatenimage prüfen
         env:
-          IMAGE_DIGEST: ${{ steps.dev-build.outputs.digest }}
+          IMAGE_DIGEST: ${{ steps.candidate-build.outputs.digest }}
         run: |
           set -euo pipefail
           docker pull "$DEVCONTAINER_IMAGE@$IMAGE_DIGEST"
           docker run --rm "$DEVCONTAINER_IMAGE@$IMAGE_DIGEST" java -version
           docker run --rm "$DEVCONTAINER_IMAGE@$IMAGE_DIGEST" gradle --version
-          echo "Devcontainer: $DEVCONTAINER_IMAGE@$IMAGE_DIGEST" >> "$GITHUB_STEP_SUMMARY"
+          test "$(docker run --rm "$DEVCONTAINER_IMAGE@$IMAGE_DIGEST" id -u)" = 1000
+          test "$(docker run --rm "$DEVCONTAINER_IMAGE@$IMAGE_DIGEST" id -g)" = 1000
+          echo "Kandidat: $DEVCONTAINER_IMAGE:sha-$GITHUB_SHA ($IMAGE_DIGEST)" >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Versions-PR vorbereiten
+  publish:
+    if: github.event_name == 'release' && startsWith(github.event.release.tag_name, 'devcontainer-v') && !github.event.release.prerelease
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      contents: write
+      packages: write
+      pull-requests: write
+    steps:
+      - name: Release und Repository auschecken
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Release-Tag und Version validieren
+        id: version
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$RELEASE_TAG" =~ ^devcontainer-v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            echo "Erwartet wird ein Tag wie devcontainer-v1.0.0." >&2
+            exit 1
+          fi
+          version="v${RELEASE_TAG#devcontainer-v}"
+          git fetch origin main
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "Nur Commits aus main dürfen als Devcontainer veröffentlicht werden." >&2
+            exit 1
+          fi
+          python - "$version" "$(cat .devcontainer/IMAGE_VERSION)" <<'PY'
+          import re, sys
+          def parts(value):
+              if not re.fullmatch(r"v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)", value):
+                  raise SystemExit(f"Ungültige SemVer-Version: {value}")
+              return tuple(map(int, value[1:].split(".")))
+          if parts(sys.argv[1]) <= parts(sys.argv[2]):
+              raise SystemExit("Die neue Image-Version muss größer als IMAGE_VERSION sein.")
+          PY
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Docker Buildx einrichten
+        uses: docker/setup-buildx-action@v4
+
+      - name: Bei GHCR anmelden
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Wiederverwendung einer offiziellen Version verhindern
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           set -euo pipefail
-          git checkout main
+          if docker manifest inspect "$DEVCONTAINER_IMAGE:$VERSION" >/dev/null 2>&1; then
+            echo "$DEVCONTAINER_IMAGE:$VERSION existiert bereits und wird nicht überschrieben." >&2
+            exit 1
+          fi
+
+      - name: Release-Kandidat lokal bauen
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: .devcontainer/Dockerfile
+          platforms: linux/amd64
+          pull: true
+          load: true
+          tags: tictactest-devcontainer:release-candidate
+
+      - name: Java, Gradle, UID/GID und Projekt im Release-Kandidaten prüfen
+        run: |
+          set -euo pipefail
+          docker run --rm tictactest-devcontainer:release-candidate java -version
+          docker run --rm tictactest-devcontainer:release-candidate gradle --version
+          test "$(docker run --rm tictactest-devcontainer:release-candidate id -u)" = 1000
+          test "$(docker run --rm tictactest-devcontainer:release-candidate id -g)" = 1000
+          docker run --rm --user root \
+            -v "$PWD:/workspace" -w /workspace \
+            tictactest-devcontainer:release-candidate \
+            bash gradlew --no-daemon -Dorg.gradle.java.installations.paths=/opt/java/openjdk clean build
+
+      - name: Exakt das geprüfte Image offiziell hochladen
+        id: release-push
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          docker tag tictactest-devcontainer:release-candidate "$DEVCONTAINER_IMAGE:$VERSION"
+          docker push "$DEVCONTAINER_IMAGE:$VERSION"
+          docker pull "$DEVCONTAINER_IMAGE:$VERSION"
+          digest_ref=$(docker image inspect "$DEVCONTAINER_IMAGE:$VERSION" \
+            --format '{{range .RepoDigests}}{{println .}}{{end}}' \
+            | grep -F "$DEVCONTAINER_IMAGE@sha256:" | head -n 1)
+          [[ "$digest_ref" == "$DEVCONTAINER_IMAGE@sha256:"* ]]
+          echo "digest_ref=$digest_ref" >> "$GITHUB_OUTPUT"
+
+      - name: Veröffentlichtes Image anhand des Digests prüfen
+        env:
+          IMAGE_DIGEST_REF: ${{ steps.release-push.outputs.digest_ref }}
+        run: |
+          set -euo pipefail
+          docker run --rm "$IMAGE_DIGEST_REF" java -version
+          test "$(docker run --rm "$IMAGE_DIGEST_REF" id -u)" = 1000
+          test "$(docker run --rm "$IMAGE_DIGEST_REF" id -g)" = 1000
+          echo "Freigegeben: $DEVCONTAINER_IMAGE:${{ steps.version.outputs.version }} ($IMAGE_DIGEST_REF)" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Idempotenten Versions-Branch erstellen oder aktualisieren
+        id: update
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          branch="automation/devcontainer-$VERSION"
+          git switch --force-create "$branch" origin/main
           python scripts/update_devcontainer_version.py "$VERSION"
+          if git diff --quiet; then
+            echo "Keine Versionsänderung erforderlich; es wird kein PR erstellt." >> "$GITHUB_STEP_SUMMARY"
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          branch="automation/devcontainer-$VERSION"
-          git checkout -b "$branch"
-          git add .devcontainer/devcontainer.json
+          git add .devcontainer/IMAGE_VERSION .devcontainer/devcontainer.json .github/workflows
           git commit -m "Use released devcontainer $VERSION"
-          git push --set-upstream origin "$branch"
-          echo "branch=$branch" >> "$GITHUB_ENV"
+          git push --force-with-lease --set-upstream origin "$branch"
+          {
+            echo "changed=true"
+            echo "branch=$branch"
+            echo "commit=$(git rev-parse HEAD)"
+          } >> "$GITHUB_OUTPUT"
 
-      - name: Pull Request erstellen
+      - name: Pull Request genau einmal erstellen
+        if: steps.update.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ steps.version.outputs.version }}
+          BRANCH: ${{ steps.update.outputs.branch }}
         run: |
-          gh pr create \
-            --base main \
-            --head "$branch" \
-            --title "Use released devcontainer $VERSION" \
-            --body "Aktualisiert Entwicklungsumgebung und CI automatisch auf das geprüfte Devcontainer-Release $VERSION."
+          set -euo pipefail
+          existing=$(gh pr list --base main --head "$BRANCH" --state open --json number --jq '.[0].number // empty')
+          if [[ -n "$existing" ]]; then
+            echo "Vorhandener PR #$existing wurde aktualisiert." >> "$GITHUB_STEP_SUMMARY"
+          else
+            gh pr create \
+              --base main \
+              --head "$BRANCH" \
+              --title "Use released devcontainer $VERSION" \
+              --body "Aktualisiert zentrale Version, lokale VS-Code-Umgebung und alle CI-Verbraucher auf das geprüfte Devcontainer-Release $VERSION."
+          fi
+
+      - name: CI für den Bot-PR explizit auslösen
+        if: steps.update.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: ${{ steps.update.outputs.branch }}
+          UPDATE_COMMIT: ${{ steps.update.outputs.commit }}
+        run: |
+          set -euo pipefail
+          gh workflow run ci.yml --ref "$BRANCH"
+          run_id=""
+          for _ in {1..20}; do
+            run_id=$(gh run list --workflow ci.yml --branch "$BRANCH" --event workflow_dispatch \
+              --json databaseId,headSha --jq ".[] | select(.headSha == \"$UPDATE_COMMIT\") | .databaseId" | head -n 1)
+            [[ -n "$run_id" ]] && break
+            sleep 3
+          done
+          if [[ -z "$run_id" ]]; then
+            echo "Der explizit ausgelöste CI-Lauf wurde nicht gefunden." >&2
+            exit 1
+          fi
+          gh run watch "$run_id" --exit-status
+          echo "CI-Lauf $run_id prüfte exakt Commit $UPDATE_COMMIT." >> "$GITHUB_STEP_SUMMARY"

@@ -1,5 +1,6 @@
 package ch.bbw.m450.tictactoe;
 
+import static ch.bbw.m450.tictactoe.BoardFixtures.board;
 import static ch.bbw.m450.tictactoe.TicTacToePlayer.Stone.CIRCLE;
 import static ch.bbw.m450.tictactoe.TicTacToePlayer.Stone.CROSS;
 
@@ -8,7 +9,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
-import ch.bbw.m450.tictactoe.TicTacToePlayer.Stone;
 import ch.bbw.m450.tictactoe.players.GreedyPlayer;
 
 class TicTacToePlayerTest implements WithAssertions {
@@ -42,17 +42,4 @@ class TicTacToePlayerTest implements WithAssertions {
         assertThat(CIRCLE.opponent()).isEqualTo(CROSS);
     }
 
-    private static Stone[] board(String representation) {
-        // Die kompakte Zeichenfolge macht Testdaten leichter lesbar als Array-Literale.
-        var board = new Stone[TicTacToeMain.BOARD_SIZE];
-        for (var i = 0; i < representation.length(); i++) {
-            board[i] = switch (representation.charAt(i)) {
-                case 'X' -> CROSS;
-                case 'O' -> CIRCLE;
-                case '.' -> null;
-                default -> throw new IllegalArgumentException("Unknown board character");
-            };
-        }
-        return board;
-    }
 }
