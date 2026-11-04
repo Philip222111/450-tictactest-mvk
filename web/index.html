@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="de"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TicTacTest Web-Konsole</title>
+<style>body{font:18px system-ui;background:#11202b;color:#edf5fa;max-width:680px;margin:6vh auto;padding:24px}h1{font-size:2.4rem}pre{background:#08141e;padding:24px;border-radius:12px;min-height:220px;white-space:pre-wrap}button,input{font:inherit;padding:12px;border-radius:8px;border:0}button{background:#76dec3;color:#11202b;cursor:pointer}input{width:100px}#status{min-height:1.5em;color:#ffcd8b}</style>
+<h1>TicTacTest</h1><p>Die originale Java-Konsole im Browser. Du spielst X gegen den Computer.</p>
+<button id="new">Neues Spiel</button><pre id="console" aria-live="polite">Starte ein neues Spiel.</pre>
+<form id="move"><label>Position (0?8) <input id="position" type="number" min="0" max="8" required></label> <button id="send" disabled>Zug senden</button></form>
+<p id="status" role="status"></p><p>Ung?ltige oder belegte Positionen k?nnen das Originalspiel beenden. Mit ?Neues Spiel? kannst du neu beginnen. Spiele verfallen nach 5 Minuten ohne Aktivit?t.</p>
+<script>
+let token = null, busy = false;
+const status = document.querySelector('#status'), output = document.querySelector('#console'), send = document.querySelector('#send');
+async function api(path, body) {
+ const response = await fetch(path, {method:body ? 'POST':'GET', headers:{'Content-Type':'application/json', ...(token ? {'X-Game-Token':token}:{})}, ...(body ? {body:JSON.stringify(body)}:{})});
+ const data = await response.json(); if (!response.ok) throw Error(data.error); return data;
+}
+document.querySelector('#new').onclick = async () => {
+ try { token = (await api('/api/game', {})).token; status.textContent = ''; await poll(); } catch(e) {status.textContent=e.message;}
+};
+document.querySelector('#move').onsubmit = async e => {
+ e.preventDefault(); if(busy || !token) return; busy=true; send.disabled=true;
+ try {await api('/api/move', {move:Number(document.querySelector('#position').value)}); await new Promise(r=>setTimeout(r,150)); await poll();} catch(e){status.textContent=e.message;} finally{busy=false;}
+};
+async function poll(){if(!token)return;try{const data=await api('/api/game');output.textContent=data.output;send.disabled=data.finished||busy;if(data.finished)status.textContent='Spiel beendet. Starte ein neues Spiel.';}catch(e){status.textContent=e.message;token=null;send.disabled=true;}}
+setInterval(poll, 700);
+</script></html>

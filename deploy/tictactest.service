@@ -1,0 +1,17 @@
+[Unit]
+Description=TicTacTest browser console
+After=network.target
+[Service]
+User=tictactest
+Group=tictactest
+WorkingDirectory=/opt/tictactest
+ExecStart=/usr/bin/python3 /opt/tictactest/web/server.py --jar /opt/tictactest/app.jar --host 0.0.0.0 --port 8080
+Restart=on-failure
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+MemoryMax=700M
+TasksMax=128
+[Install]
+WantedBy=multi-user.target

@@ -104,3 +104,7 @@ Versions-PRs sind in
 jqwik prueft generierte Spielstaende und Pioneer die Konsolenein-/ausgabe.
 [Branch Protection](BRANCH_PROTECTION.md) beschreibt die erforderlichen
 GitHub-Regeln. [Pruefungsvorbereitung](PRUEFUNG.md) erklaert die Entscheidungen.
+# Cloud-Erweiterung
+
+Web-Konsole für das unveränderte Release-JAR, EC2-Installation und automatisches
+Deployment: [Schritt-für-Schritt-Anleitung](CLOUD.md).

@@ -1,0 +1,104 @@
+name: Deploy release
+on:
+  workflow_call:
+    inputs:
+      tag:
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing release tag, e.g. v1.1.0
+        required: true
+        type: string
+  release:
+    types: [published]
+permissions:
+  contents: read
+concurrency:
+  group: tictactest-cloud
+  cancel-in-progress: false
+jobs:
+  deploy:
+    if: github.event_name != 'release' || startsWith(github.event.release.tag_name, 'v')
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+      AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
+      TAG: ${{ inputs.tag || github.event.release.tag_name }}
+      TF_VAR_aws_region: ${{ vars.AWS_REGION }}
+      TF_VAR_ami_id: ${{ vars.AMI_ID }}
+      TF_VAR_allowed_ssh_cidr: ${{ vars.SSH_CIDR }}
+      TF_VAR_instance_type: ${{ vars.INSTANCE_TYPE || 't2.micro' }}
+      TF_VAR_instance_name: ${{ vars.INSTANCE_NAME || 'tictactest-dev' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.event.release.tag_name }}
+      - uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: 1.13.2
+          tofu_wrapper: false
+      - name: Prepare SSH and shared state
+        env:
+          SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+          PUBLIC_KEY: ${{ secrets.EC2_PUBLIC_KEY }}
+          KNOWN_HOSTS: ${{ secrets.EC2_KNOWN_HOSTS }}
+          STATE_BUCKET: ${{ vars.TOFU_STATE_BUCKET }}
+          SUBNET: ${{ vars.SUBNET_ID }}
+        run: |
+          set -euo pipefail
+          [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          test -n "$STATE_BUCKET"
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/tictactest_ed25519
+          chmod 600 ~/.ssh/tictactest_ed25519
+          printf '%s\n' "$PUBLIC_KEY" > ~/.ssh/tictactest_ed25519.pub
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          if [ -n "$SUBNET" ]; then echo "TF_VAR_subnet_id=$SUBNET" >> "$GITHUB_ENV"; fi
+          cp infrastructure/backend.tf.example infrastructure/backend.tf
+          tofu -chdir=infrastructure init -input=false -backend-config="bucket=$STATE_BUCKET" -backend-config="region=$AWS_DEFAULT_REGION"
+      - name: Apply only infrastructure differences
+        run: |
+          set -euo pipefail
+          tofu -chdir=infrastructure validate
+          tofu -chdir=infrastructure plan -input=false -out=deploy.tfplan
+          tofu -chdir=infrastructure show -json deploy.tfplan > /tmp/plan.json
+          python - <<'PY'
+          import json
+          plan = json.load(open('/tmp/plan.json'))
+          if any('delete' in r['change']['actions'] for r in plan.get('resource_changes', [])):
+              raise SystemExit('Destructive infrastructure change: apply manually after review.')
+          PY
+          tofu -chdir=infrastructure apply -input=false deploy.tfplan
+          echo "HOST=$(tofu -chdir=infrastructure output -raw public_ipv4)" >> "$GITHUB_ENV"
+          echo "SG=$(tofu -chdir=infrastructure output -raw security_group_id)" >> "$GITHUB_ENV"
+      - name: Download original verified release JAR
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir artifacts
+          gh release download "$TAG" --dir artifacts --pattern "tictactest-${TAG#v}.jar" --pattern "tictactest-${TAG#v}.jar.sha256"
+          (cd artifacts && sha256sum -c *.sha256)
+      - name: Temporarily allow this runner to SSH
+        run: |
+          set -euo pipefail
+          ip=$(curl -fsS https://checkip.amazonaws.com)
+          python -c 'import ipaddress,sys; ipaddress.IPv4Address(sys.argv[1])' "$ip"
+          rule=$(aws ec2 authorize-security-group-ingress --group-id "$SG" --protocol tcp --port 22 --cidr "$ip/32" --query 'SecurityGroupRules[0].SecurityGroupRuleId' --output text)
+          echo "RULE=$rule" >> "$GITHUB_ENV"
+      - name: Transfer only changed files and install
+        run: |
+          set -euo pipefail
+          export RSYNC_RSH="ssh -i $HOME/.ssh/tictactest_ed25519 -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=20"
+          ssh -i ~/.ssh/tictactest_ed25519 -o BatchMode=yes -o StrictHostKeyChecking=yes "ec2-user@$HOST" 'sudo dnf install -y rsync && mkdir -p ~/tictactest-upload'
+          rsync -rc --delete --exclude='__pycache__/' --itemize-changes web deploy artifacts "ec2-user@$HOST:tictactest-upload/"
+          ssh -i ~/.ssh/tictactest_ed25519 -o BatchMode=yes -o StrictHostKeyChecking=yes "ec2-user@$HOST" 'cd ~/tictactest-upload && sudo bash deploy/install.sh'
+      - name: Revoke temporary SSH rule
+        if: always() && env.RULE != ''
+        run: aws ec2 revoke-security-group-ingress --group-id "$SG" --security-group-rule-ids "$RULE"

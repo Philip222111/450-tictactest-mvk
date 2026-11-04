@@ -65,6 +65,9 @@ jobs:
           cd build/libs
           sha256sum "tictactest-$VERSION.jar" > "tictactest-$VERSION.jar.sha256"
 
+      - name: Web-Konsole mit dem Release-JAR testen
+        run: TEST_JAR="build/libs/tictactest-$VERSION.jar" python3 -m unittest discover -s web -p test_server.py
+
       - name: GitHub Release veröffentlichen
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -80,3 +83,10 @@ jobs:
           gh release download "$TAG" --dir downloaded --pattern '*.jar' --pattern '*.sha256'
           (cd downloaded && sha256sum -c "tictactest-$VERSION.jar.sha256")
           python scripts/smoke_jar.py "downloaded/tictactest-$VERSION.jar"
+
+  deploy:
+    needs: release
+    uses: ./.github/workflows/deploy.yml
+    with:
+      tag: ${{ github.ref_name }}
+    secrets: inherit

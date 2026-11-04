@@ -1,0 +1,9 @@
+# Kopieren nach terraform.tfvars und die eigene oeffentliche IPv4 eintragen.
+aws_region          = "eu-central-1"
+ami_id              = "ami-REPLACE" # AMI der bestehenden Instanz aus EC2 uebernehmen; regionsabhaengig.
+instance_type       = "t2.micro"
+instance_name       = "tictactest-dev"
+ssh_public_key_path = "~/.ssh/tictactest_ed25519.pub"
+allowed_ssh_cidr    = "203.0.113.10/32" # Dokumentationsadresse: vor Deployment ersetzen!
+environment         = "dev"
+# subnet_id = "subnet-..." # Bestehendes oeffentliches Lab-Subnetz, falls kein Default-VPC.
