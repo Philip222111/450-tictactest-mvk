@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.3.4 - 2026-11-04
+
+### Added
+- Nachweis eines Releases mit Backend- und Frontend-Aenderung.
+
+### Changed
+- Neue Begruessung in der Java-Konsole und neuer Titel auf der Startseite.
+- Infrastruktur-Demo-Umgebungsvariable fuer das bestehende systemd-Service.
+
+### Fixed
+- Keine Neuerstellung der EC2 bei einer reinen Dienstkonfigurationsaenderung.
+
 ## 1.3.3 - 2026-11-04
 
 ### Added
