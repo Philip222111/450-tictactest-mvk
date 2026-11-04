@@ -1,8 +1,8 @@
 # TicTacTest
 
 TicTacTest ist ein kleines Tic-Tac-Toe-Konsolenspiel in Java. Ein Mensch spielt
-mit X gegen einen einfachen Computergegner, der jeweils das erste freie Feld
-wählt. Das Repository dient zugleich als Beispiel für automatisierte Tests,
+mit X und wählt vor jeder Partie **1 = GreedyPlayer** (erstes freies Feld) oder
+**2 = PerfectPlayer** (Minimax). Das Repository dient zugleich als Beispiel für automatisierte Tests,
 JaCoCo-Coverage, GitHub Actions, eine Coverage-Zeitreihe auf GitHub Pages und
 eine reproduzierbare Devcontainer-Umgebung.
 

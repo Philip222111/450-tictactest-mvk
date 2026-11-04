@@ -8,7 +8,7 @@ import time
 
 
 def smoke(jar):
-    # Send one move per prompt: HumanPlayer creates a scanner each turn.
+    # Send one answer per prompt; supports old releases and the opponent menu.
     process = subprocess.Popen(
         ["java", "-jar", str(jar)], stdin=subprocess.PIPE,
         stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
@@ -31,7 +31,10 @@ def smoke(jar):
                     break
                 continue
             transcript += line
-            if "(0-8):" in line:
+            if "Gegner (1=Greedy, 2=Perfect):" in line:
+                process.stdin.write("1\n")
+                process.stdin.flush()
+            elif "(0-8):" in line:
                 process.stdin.write(next(moves) + "\n")
                 process.stdin.flush()
         if process.poll() is None:

@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.4.0 - 2026-11-04
+
+### Added
+- Gegnerauswahl pro Partie: 1 fuer GreedyPlayer, 2 fuer PerfectPlayer (Minimax).
+- Konsolentests und WebSocket-Pruefung fuer beide Gegner.
+
+### Changed
+- Gegnerauswahl und menschlicher Spieler teilen denselben Eingabescanner.
+- Frontend erklaert die Auswahl; jede neue Terminalverbindung fragt erneut.
+
+### Fixed
+- Gepufferte Eingaben gehen beim Wechsel von Menue zu Spiel nicht mehr verloren.
+- Deployment-Pruefung akzeptiert Auswahlmenue und aeltere Release-JARs.
+
 ## 1.3.5 - 2026-11-04
 
 ### Added

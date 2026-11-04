@@ -1,10 +1,13 @@
 package ch.bbw.m450.tictactoe;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Scanner;
 
 import ch.bbw.m450.tictactoe.TicTacToePlayer.Stone;
 import ch.bbw.m450.tictactoe.players.GreedyPlayer;
 import ch.bbw.m450.tictactoe.players.HumanPlayer;
+import ch.bbw.m450.tictactoe.players.PerfectPlayer;
 
 /**
  * A small tic-tac-toe board. Initially with a human and a primitive but valid computer player.
@@ -15,12 +18,28 @@ public class TicTacToeMain {
 
     public static final int BOARD_SIZE = 9;
 
-    /** Startet ein Spiel Mensch gegen den einfachen Computergegner. */
-    // Keep the standard JVM entry-point signature; command-line options are not used.
+    /** Startet nach der Gegnerauswahl ein Spiel Mensch gegen Computer. */
+    // The selection uses the same input stream in the CLI and in ttyd.
     @SuppressWarnings("java:S1172")
     public static void main(String[] args) {
-        System.out.println("TicTacTest: Willkommen! X gegen GreedyPlayer");
-        play(new HumanPlayer(), new GreedyPlayer());
+        var input = new Scanner(System.in, StandardCharsets.UTF_8);
+        TicTacToePlayer opponent = null;
+        while (opponent == null) {
+            System.out.println("Gegner (1=Greedy, 2=Perfect):");
+            if (!input.hasNextLine()) {
+                return;
+            }
+            opponent = switch (input.nextLine().trim()) {
+                case "1" -> new GreedyPlayer();
+                case "2" -> new PerfectPlayer();
+                default -> null;
+            };
+            if (opponent == null) {
+                System.out.println("Bitte 1 fuer Greedy oder 2 fuer Perfect eingeben.");
+            }
+        }
+        System.out.println("TicTacTest: X gegen " + opponent.getClass().getSimpleName());
+        play(new HumanPlayer(input), opponent);
     }
 
     /**

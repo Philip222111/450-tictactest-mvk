@@ -1,5 +1,19 @@
 # Auftrag 1: echte Web-Konsole und getrenntes Frontend
 
+## Erweiterung ab Release 1.4.0: Gegner wählen
+
+Auf Anwenderwunsch bietet das JAR vor jeder Partie ein Konsolenmenü:
+**1 + Enter** wählt GreedyPlayer, **2 + Enter** den vorhandenen PerfectPlayer
+mit Minimax. Danach die Feldnummern 0–8 eingeben. „Neues Spiel“ öffnet eine
+neue Verbindung und damit eine neue Auswahl; andere Tabs bleiben unabhängig.
+Ungültige Menüeingaben werden erneut abgefragt. Der PerfectPlayer spielt optimal
+und kann bei korrekten Zügen beider Seiten höchstens ein Remis zulassen.
+
+Die Spiellogik und die beiden Spieler-Algorithmen sind unverändert. Neu ist die
+Auswahl in `main()` und ein gemeinsam verwendeter Scanner für Menü und Züge.
+Das so gebaute Release-JAR wird weiterhin unverändert deployt. ttyd startet nur
+das feste JAR; es gibt keine Shell und keine frei übergebenen URL-Kommandoargumente.
+
 ## Werkzeug und Sicherheit
 
 Wir verwenden **ttyd 1.7.7** statt der zuerst entwickelten Python-HTTP-Brücke
