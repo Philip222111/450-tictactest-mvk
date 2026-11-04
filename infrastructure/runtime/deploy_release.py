@@ -51,7 +51,8 @@ def deploy(source, tag, force=False):
         raise ValueError('Invalid tag')
     with tempfile.TemporaryDirectory() as temp:
         temp = Path(temp)
-        subprocess.run(['aws', 's3', 'cp', source, str(temp), '--recursive', '--only-show-errors'], check=True)
+        for name in ('deployment.json', 'deployment.json.sha256'):
+            subprocess.run(['aws', 's3', 'cp', source + name, str(temp / name), '--only-show-errors'], check=True)
         for check in temp.glob('*.sha256'):
             expected, filename = check.read_text().split()
             if Path(filename).name != filename or hashlib.sha256((temp / filename).read_bytes()).hexdigest() != expected:
@@ -59,15 +60,18 @@ def deploy(source, tag, force=False):
         manifest = json.loads((temp / 'deployment.json').read_text())
         if manifest['tag'] != tag or manifest['version'] != tag[1:]:
             raise RuntimeError('Release manifest has wrong tag/version')
-        for filename, digest in manifest['files'].items():
-            if Path(filename).name != filename or hashlib.sha256((temp / filename).read_bytes()).hexdigest() != digest:
-                raise RuntimeError('Release artifact checksum mismatch')
         statefile = ROOT / 'deployment-state.json'
         state = json.loads(statefile.read_text()) if statefile.exists() else {}
         # Drift, a skipped release or a rollback means the target needs both components.
         force = force or state.get('tag') != manifest['previous_tag']
         changed = {part: force or manifest['changed'][part] for part in ('backend', 'frontend')}
         version = manifest['version']
+        for part, name in [('backend', f'tictactest-{version}.jar'),
+                           ('frontend', f'tictactest-frontend-{version}.zip')]:
+            if changed[part]:
+                subprocess.run(['aws', 's3', 'cp', source + name, str(temp / name), '--only-show-errors'], check=True)
+                if hashlib.sha256((temp / name).read_bytes()).hexdigest() != manifest['files'][name]:
+                    raise RuntimeError('Release artifact checksum mismatch')
         jar = temp / f'tictactest-{version}.jar'
         if changed['backend']:
             preflight(jar, version)  # A broken artifact never replaces the healthy application.

@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.3.1 - 2026-11-04
+
+### Added
+- Manueller Release-B-Nachweis fuer die getrennte Frontend-Auslieferung.
+
+### Changed
+- Goldene Schaltflaeche als sichtbare Frontend-Aenderung.
+- EC2 laedt nur die zu aktivierenden Komponenten aus dem privaten Artefaktspeicher.
+
+### Fixed
+- Keine Backend-Aenderung.
+
 ## 1.3.0 - 2026-11-04
 
 ### Added
