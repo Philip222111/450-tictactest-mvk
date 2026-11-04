@@ -47,6 +47,10 @@ class BrowserGameTest(unittest.TestCase):
     def test_complete_game_and_isolation(self):
         token = self.call('/api/game', {})['token']
         other = self.call('/api/game', {})['token']
+        for current in (token, other):
+            state = self.wait(current, lambda s: 'Gegner (1=Greedy, 2=Perfect):' in s['output'] or '(0-8)' in s['output'])
+            if 'Gegner (1=Greedy, 2=Perfect):' in state['output']:
+                self.call('/api/move', {'move': 1}, current)
         initial = self.wait(token, lambda s: '(0-8)' in s['output'])
         self.wait(other, lambda s: '(0-8)' in s['output'])
         state = initial

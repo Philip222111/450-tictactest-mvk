@@ -36,7 +36,7 @@ def preflight(jar, version):
         while time.monotonic() < deadline:
             for key, _ in selector.select(.2):
                 output += os.read(key.fd, 4096)
-                if b'(0-8)' in output:
+                if b'(0-8)' in output or b'Gegner (1=Greedy, 2=Perfect):' in output:
                     return
             if process.poll() is not None:
                 break
