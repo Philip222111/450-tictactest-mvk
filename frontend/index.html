@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="de">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TicTacTest – Web-Konsole</title>
+<link rel="stylesheet" href="style.css">
+<script src="config.js"></script><script src="app.js" defer></script>
+<main><h1>TicTacTest</h1><p>Du spielst X gegen GreedyPlayer. Klicke ins Terminal,
+gib die Nummer eines freien Feldes (0–8) ein und drücke Enter. Drei in einer Reihe gewinnen.</p>
+<p id="versions" role="status">Versionen werden geladen …</p>
+<button id="restart">Neues Spiel</button>
+<iframe id="terminal" title="TicTacTest Java-Terminal"></iframe>
+<p>Nach Spielende oder ungültiger Eingabe startet „Neues Spiel“ einen neuen Prozess.
+Maximal acht gleichzeitige Verbindungen. Nicht länger benötigte Tabs schliessen.</p></main>
+</html>

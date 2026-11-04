@@ -7,3 +7,5 @@ ssh_public_key_path = "~/.ssh/tictactest_ed25519.pub"
 allowed_ssh_cidr    = "203.0.113.10/32" # Dokumentationsadresse: vor Deployment ersetzen!
 environment         = "dev"
 # subnet_id = "subnet-..." # Bestehendes oeffentliches Lab-Subnetz, falls kein Default-VPC.
+
+artifact_bucket = "YOUR-PRIVATE-UNIQUE-BUCKET" # Bootstrap via AWS CLI, see docs/deployment.md

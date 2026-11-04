@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.3.0 - 2026-11-04
+
+### Added
+- Echte ttyd-Web-Konsole mit PTY/WebSocket und getrenntem statischem Frontend.
+- Frontend- und Tools-Archive, Deployment-Manifest und HTTP-Versionsabfragen.
+- Elastic IP, LabInstanceProfile, SSM-Bootstrap und privater Artefaktspeicher.
+- Release-Tag-Vergleich, komponentenbezogenes Deployment und gezielter Rollback.
+- Secrets-Konzept, Betriebsanleitung und Promotion-Strategie in docs/deployment.md.
+
+### Changed
+- App-Deployments verwenden S3/SSM und fuehren kein OpenTofu mehr aus.
+- Laufzeitkonfiguration und Infrastruktur sind vom Release-Inhalt getrennt.
+
+### Fixed
+- Frontend-only-Releases starten das Backend nicht mehr allein wegen VERSION neu.
+- Frontend-Deployments erhalten die von der Infrastruktur erzeugte Konfiguration.
+
 ## 1.2.0 - 2026-11-04
 
 ### Added

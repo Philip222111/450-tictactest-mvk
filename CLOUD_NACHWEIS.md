@@ -1,5 +1,9 @@
 # Cloud-Aufträge: Umsetzung und Nachweise
 
+Historischer Nachweis der ersten Iteration. Die aktuellen Detailaufträge und
+neuen Release-Fälle sind in [docs/deployment-nachweise.md](docs/deployment-nachweise.md)
+dokumentiert; die frühere dynamische IP ist nicht mehr die Spieladresse.
+
 Stand: 4. November 2026. Repository: `Philip222111/450-tictactest-mvk`.
 
 ## Auftrag 1: unverändertes Release-JAR im Browser

@@ -68,12 +68,17 @@ jobs:
       - name: Web-Konsole mit dem Release-JAR testen
         run: TEST_JAR="build/libs/tictactest-$VERSION.jar" python3 -m unittest discover -s web -p test_server.py
 
+      - name: Frontend und Deployment-Manifest paketieren
+        env:
+          TAG: ${{ github.ref_name }}
+        run: python3 scripts/release_assets.py "$TAG"
+
       - name: GitHub Release veröffentlichen
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ github.ref_name }}
         run: |
-          gh release create "$TAG" "build/libs/tictactest-$VERSION.jar" "build/libs/tictactest-$VERSION.jar.sha256" --verify-tag --title "TicTacTest $TAG" --notes-file release-notes.md
+          gh release create "$TAG" release-assets/* --verify-tag --title "TicTacTest $TAG" --notes-file release-notes.md
 
       - name: Veröffentlichtes Artefakt herunterladen und testen
         env:
@@ -86,6 +91,7 @@ jobs:
 
   deploy:
     needs: release
+    if: vars.AUTO_DEPLOY != 'false'
     uses: ./.github/workflows/deploy.yml
     with:
       tag: ${{ github.ref_name }}

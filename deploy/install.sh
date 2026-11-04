@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
+echo 'Obsolete installer: use scripts/deploy_cloud.py and docs/deployment.md' >&2
+exit 1
 cd "$(dirname "$0")/.."
 jars=(artifacts/*.jar)
 if [ "${#jars[@]}" -ne 1 ] || [ ! -f "${jars[0]}" ]; then

@@ -111,3 +111,10 @@ Deployment: [Schritt-für-Schritt-Anleitung](CLOUD.md).
 
 Erfolgreiche Releases, Cloud-Tests und unverändertes Wiederholungsdeployment:
 [Nachweise für die drei Cloud-Aufträge](CLOUD_NACHWEIS.md).
+# TicTacTest Web-App
+
+**Spielen:** http://ec2-98-87-74-14.compute-1.amazonaws.com
+
+Die drei Detailaufträge: [Web-Konsole lokal](docs/webkonsole.md),
+[Deployment, Secrets und Promotion](docs/deployment.md),
+[Laufnachweise](docs/deployment-nachweise.md).
