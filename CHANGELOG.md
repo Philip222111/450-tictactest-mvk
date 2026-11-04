@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.3.2 - 2026-11-04
+
+### Added
+- Automatischer Frontend-only-Release als Trennungsnachweis.
+
+### Changed
+- Dunkelblauer Hintergrund im Frontend.
+
+### Fixed
+- Windows-ConPTY-Einschraenkung dokumentiert; lokaler Linux-Container als Alternative.
+
 ## 1.3.1 - 2026-11-04
 
 ### Added
