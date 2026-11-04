@@ -138,6 +138,10 @@ AWS-Schlüsseln. Trust Policy auf Repository, Environment und Audience beschrän
 
 ## Release-Erkennung und Artefakte
 
+Die Veroeffentlichung erfolgt zuerst als Draft: acht Assets hochladen, alle
+Pruefsummen erneut pruefen, dann veroeffentlichen. Beobachtete GitHub-5xx
+werden begrenzt wiederholt. Bereits publizierte Assets werden nicht ersetzt.
+
 Ein `v*`-Tag baut und testet das JAR im **Release-Job**, paketiert plain
 Frontend-Dateien und veröffentlicht JAR, Frontend-ZIP, lokale Tools,
 `deployment.json` und SHA-256-Dateien. Deployment baut nichts. Die Java-Quellen
@@ -240,10 +244,10 @@ deployen. Keine statische JAR-Version gehört in user_data.
 
 Ein echter Lab-Session-Wechsel muss über die Lab-Oberfläche erfolgen. Stop/Start
 testet die technische Persistenz, ersetzt aber keinen Nachweis für das Verhalten
-der Lab-Plattform. `destroy` wurde auf der produktiven Lerninstanz nicht bloss
-für einen Screenshot ausgeführt; der destruktive Plan und die notwendigen
-Wiederaufbauschritte werden dokumentiert. Nicht ausgeführte Experimente werden
-im Nachweis ausdrücklich als solche bezeichnet.
+der Lab-Plattform. Der vollstaendige destroy/apply-Versuch wurde auf dem Lern-Stack ausgefuehrt
+und Release 1.3.4 auf der neuen Instanz wiederhergestellt. Alte und neue Werte
+sowie der erfolgreiche Actions-Lauf stehen im Nachweis. Nur ein echter
+Session-Wechsel ueber die Learner-Lab-Oberflaeche bleibt manuell zu pruefen.
 
 ## Reflexion: Weg einer Änderung und Promotion
 

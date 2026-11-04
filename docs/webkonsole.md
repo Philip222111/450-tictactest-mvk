@@ -59,6 +59,27 @@ Linux/Devcontainer: `sha256sum -c *.sha256`, Tools entpacken und
 `chmod +x tools/ttyd.x86_64`; anschliessend denselben Python-Aufruf mit
 `--ttyd tools/ttyd.x86_64` verwenden.
 
+### Getestete Windows-Alternative: lokaler Linux-Container
+
+Die native Windows-Version von ttyd/ConPTY kann beim Beenden des Java-Prozesses
+die letzte Ausgabe abschneiden. Ein Python-Kindprozess als Puffer-Workaround
+war in dieser Umgebung ebenfalls nicht zuverlässig und wurde nicht ausgeliefert.
+Der vollständige Partietest wurde deshalb im lokalen Linux-Container bestanden.
+Er verwendet dieselben Release-Assets und keinen Anwendungssourcecode.
+
+Docker Desktop starten. In einem Ordner mit heruntergeladenem und geprüftem
+Release 1.3.0 die Tools entpacken (`Expand-Archive ... tools`) und ausführen:
+
+```powershell
+$assets = (Get-Location).Path
+docker run -d --name tictactest-local -p 127.0.0.1:8000:8080 -p 127.0.0.1:7681:7682 --mount "type=bind,source=$assets,target=/assets,readonly" eclipse-temurin:25-jdk-noble bash -c 'apt-get update -qq && apt-get install -y -qq python3 socat && cp /assets/tools/ttyd.x86_64 /tmp/ttyd && chmod +x /tmp/ttyd && (socat TCP-LISTEN:8080,fork,reuseaddr TCP:127.0.0.1:8000 &) && (socat TCP-LISTEN:7682,fork,reuseaddr TCP:127.0.0.1:7681 &) && python3 /assets/tools/local_run.py --jar /assets/tictactest-1.3.0.jar --frontend /assets/tictactest-frontend-1.3.0.zip --ttyd /tmp/ttyd'
+docker logs tictactest-local
+```
+
+Nach Installation der Laufzeitpakete: <http://localhost:8000> öffnen. Die
+Portweiterleitungen ändern nur die lokale Netzwerkkonfiguration; ttyd startet
+weiterhin ausschliesslich das feste Java-JAR. Beenden: `docker stop tictactest-local`.
+
 Frontend: <http://localhost:8000>, Web-Konsole: <http://localhost:7681/terminal/>.
 Es sind zwei getrennte Server. Der lokale Helfer erzeugt `/config.js` und liest
 die Backend-Version aus `Implementation-Version` im **heruntergeladenen** JAR.

@@ -6,6 +6,15 @@ wählt. Das Repository dient zugleich als Beispiel für automatisierte Tests,
 JaCoCo-Coverage, GitHub Actions, eine Coverage-Zeitreihe auf GitHub Pages und
 eine reproduzierbare Devcontainer-Umgebung.
 
+
+## Web-App in AWS
+
+**[TicTacTest im Browser spielen](http://ec2-54-90-29-23.compute-1.amazonaws.com)**
+
+Die drei Cloud-Auftraege: [Web-Konsole lokal](docs/webkonsole.md),
+[Deployment, Secrets und Promotion](docs/deployment.md),
+[gepruefte Releases und Experimente](docs/deployment-nachweise.md).
+
 ## Technischer Überblick
 
 - Java 25
@@ -104,17 +113,3 @@ Versions-PRs sind in
 jqwik prueft generierte Spielstaende und Pioneer die Konsolenein-/ausgabe.
 [Branch Protection](BRANCH_PROTECTION.md) beschreibt die erforderlichen
 GitHub-Regeln. [Pruefungsvorbereitung](PRUEFUNG.md) erklaert die Entscheidungen.
-# Cloud-Erweiterung
-
-Web-Konsole für das unveränderte Release-JAR, EC2-Installation und automatisches
-Deployment: [Schritt-für-Schritt-Anleitung](CLOUD.md).
-
-Erfolgreiche Releases, Cloud-Tests und unverändertes Wiederholungsdeployment:
-[Nachweise für die drei Cloud-Aufträge](CLOUD_NACHWEIS.md).
-# TicTacTest Web-App
-
-**Spielen:** http://ec2-98-87-74-14.compute-1.amazonaws.com
-
-Die drei Detailaufträge: [Web-Konsole lokal](docs/webkonsole.md),
-[Deployment, Secrets und Promotion](docs/deployment.md),
-[Laufnachweise](docs/deployment-nachweise.md).

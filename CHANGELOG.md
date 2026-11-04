@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.3.5 - 2026-11-04
+
+### Added
+- Vollstaendige Nachweise fuer manuelle Releases, Komponenten-Trennung und Rollbacks.
+- Nachweise fuer Stop/Start, Laufzeitkonfiguration und echten destroy/apply-Neuaufbau.
+
+### Changed
+- README verlinkt die neue feste Adresse des wiederaufgebauten Stacks.
+- Nur Dokumentation und Release-Metadaten; keine Backend- oder Frontend-Aenderung.
+
+### Fixed
+- Windows-ConPTY-Einschraenkung und getesteter lokaler Linux-Container dokumentiert.
+
 ## 1.3.4 - 2026-11-04
 
 ### Added
