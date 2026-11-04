@@ -60,8 +60,8 @@ resource "aws_security_group" "ssh" {
 
   ingress {
     description = "Browser console"
-    from_port   = 8080
-    to_port     = 8080
+    from_port   = 80
+    to_port     = 80
     protocol    = "tcp"
     cidr_blocks = var.web_allowed_cidrs
   }
@@ -82,6 +82,9 @@ resource "aws_instance" "app" {
   associate_public_ip_address = true
   key_name                    = aws_key_pair.ssh.key_name
   vpc_security_group_ids      = [aws_security_group.ssh.id]
+  iam_instance_profile        = data.aws_iam_instance_profile.lab.name
+  user_data_base64            = base64gzip(local.bootstrap)
+  user_data_replace_on_change = false
 
   metadata_options {
     http_endpoint = "enabled"

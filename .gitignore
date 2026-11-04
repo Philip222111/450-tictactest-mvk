@@ -54,3 +54,4 @@ secrets/
 /infrastructure/backend.tf
 /artifacts/
 /bundle/
+/release-assets/

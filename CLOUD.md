@@ -1,5 +1,9 @@
 # TicTacTest in der Cloud
 
+**Historische erste Iteration.** Die verbindliche Lösung zu den drei vollständigen
+Detailaufträgen steht jetzt in [docs/deployment.md](docs/deployment.md).
+Die aktuelle Web-App ist im README verlinkt; frühere IPs/Ports hier sind überholt.
+
 Die drei Aufträge sind implementiert und am 4. November 2026 in AWS und GitHub
 ausgeführt worden. Release und unverändertes Wiederholungsdeployment waren
 erfolgreich; konkrete Nachweise stehen in [CLOUD_NACHWEIS.md](CLOUD_NACHWEIS.md).
