@@ -7,6 +7,7 @@
 
 ### Changed
 - Goldene Schaltflaeche als sichtbare Frontend-Aenderung.
+- EC2 laedt nur die zu aktivierenden Komponenten aus dem privaten Artefaktspeicher.
 
 ### Fixed
 - Keine Backend-Aenderung.
