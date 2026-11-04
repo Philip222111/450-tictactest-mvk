@@ -81,11 +81,17 @@ erneuern. Das kann nur die angemeldete Person in der Lab-Oberfläche erledigen.
 | Nur Backend: 1.3.3 | [erfolgreich](https://github.com/Philip222111/450-tictactest-mvk/actions/runs/41811975737) | Backend 1.3.3, Frontend 1.3.2 | Inode und Zeitstempel des Frontend-Verweises sowie SHA-256 aller Frontend-Dateien identisch |
 | Beide: 1.3.4 | [erfolgreich](https://github.com/Philip222111/450-tictactest-mvk/actions/runs/41813045396) | Backend 1.3.4, Frontend 1.3.4 | Beide Komponenten durch Release-Assets ersetzt, beide HTTP-Versionen geprüft |
 | Push auf main ohne Tag | [CI](https://github.com/Philip222111/450-tictactest-mvk/actions/runs/41812460442), Commit 6e9e07e | Backend 1.3.3, Frontend 1.3.2 blieben aktiv | Backend-Prozess, JAR, Konfiguration und Deployment-State vor/nach Push identisch; nur CI-/Container-Workflows gestartet |
-| Nur Dokumentation: 1.3.5 | wird nach dem Release ergänzt | erwartet: beide bleiben 1.3.4 | keine App-Quellpfade geändert |
+| Nur Dokumentation: 1.3.5 | [erfolgreich](https://github.com/Philip222111/450-tictactest-mvk/actions/runs/41815425226) | Backend 1.3.4, Frontend 1.3.4 bleiben aktiv | changed=false für beide; PID 26394/Startzeit 10:25:50 UTC, JAR/Config-Hashes und Frontend-Inode/Zeitstempel/Dateien unverändert |
 
 Die Prüfung bezieht sich auf vollständige Release-Tag-Differenzen. Eine neue
 VERSION-Datei allein zählt nicht als Backend-Änderung. Das verhindert einen
 unnötigen Neustart bei Frontend- oder Dokumentations-Releases.
+
+Nach dem Neuaufbau: cloud-init meldete `done`, nginx und tictactest sind
+`enabled` und `active`. Ein weiterer echter WebSocket-Partietest bestand.
+Die AWS-Abfrage auf der EC2 lieferte eine LabRole-Session der neuen Instanz;
+eine statische AWS-Credentials-Datei war nicht vorhanden. Die neue SSH-Host-ID
+wurde über den authentisierten SSM-Kanal verifiziert und lokal hinterlegt.
 
 ### Rollback und Wiederherstellung
 
