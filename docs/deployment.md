@@ -251,9 +251,9 @@ Session-Wechsel ueber die Learner-Lab-Oberflaeche bleibt manuell zu pruefen.
 
 ### Letzter manueller Plattformtest beim nächsten Unterricht
 
-1. Vor dem Beenden die Spieladresse und beide HTTP-Versionen notieren. Nach
-   dem Dokumentations-Release 1.3.5 laufen absichtlich beide App-Komponenten
-   weiterhin mit 1.3.4.
+1. Vor dem Beenden die Spieladresse und beide aktuellen HTTP-Versionen notieren.
+   Nach dem Feature-Release 1.4.0 sind beide 1.4.0; für spätere Releases immer
+   die unmittelbar vor dem Lab-Ende abgefragten Werte vergleichen.
 2. In der Learner-Lab-Oberfläche **End Lab** ausführen, danach **Start Lab**
    und auf die Bereitschaft warten. Kein Lab-Reset verwenden.
 3. Die neue vollständige Credential-Dreiergruppe lokal und vor dem nächsten

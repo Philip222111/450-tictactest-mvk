@@ -6,6 +6,18 @@ Die erste, anschliessend erweiterte Iteration steht historisch in `CLOUD_NACHWEI
 
 **Aktuelle Web-App:** <http://ec2-54-90-29-23.compute-1.amazonaws.com>
 
+## Erweiterung 1.4.0: Gegnerauswahl pro Partie
+
+[Release und Deployment erfolgreich](https://github.com/Philip222111/450-tictactest-mvk/actions/runs/41826701382).
+Backend und Frontend melden 1.4.0. Das Terminal fragt vor jeder Partie nach
+1 = GreedyPlayer oder 2 = PerfectPlayer. Die Algorithmen selbst bleiben unverändert.
+Java-Tests, Coverage-Gate und PIT bestanden (85/85 Mutationen erkannt).
+Zwei gleichzeitige reale WebSocket-Partien auf EC2 wurden unabhängig getestet:
+Greedy lässt sich mit 0, 4, 8 schlagen; Perfect gewinnt gegen 0, 1, 3.
+Die bereits vorhandenen erschöpfenden PerfectPlayer-Tests prüfen weiterhin,
+dass er gegen legale Gegnerzüge nicht verliert. Die folgenden Tabellen sind
+die historischen Nachweise der vorausgehenden Cloud-Aufträge.
+
 ## Auftrag 1: lokal nur aus Release-Assets
 
 - [Release 1.3.0](https://github.com/Philip222111/450-tictactest-mvk/releases/tag/v1.3.0)
