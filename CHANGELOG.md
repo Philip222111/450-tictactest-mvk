@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.2.0 - 2026-11-04
+
+### Added
+- Browser-Konsole fuer das unveraenderte Release-JAR mit getrennten Spielsitzungen.
+- EC2-Webzugang, systemd-Installation und gemeinsamer verschluesselter S3-State.
+- Release-Deployment mit OpenTofu, SHA-256-Pruefung und inhaltsbasiertem Dateiabgleich.
+- HTTP-Integrationstest und Schritt-fuer-Schritt-Dokumentation der Cloud-Einrichtung.
+
+### Changed
+- AMI wird explizit festgelegt, damit neue AWS-Images keine EC2-Ersetzung ausloesen.
+- Der Release-Workflow ruft nach erfolgreicher Veroeffentlichung das Deployment auf.
+
+### Fixed
+- Unveraenderte Anwendungsdateien verursachen keinen erneuten Dienstneustart.
+- Automatische Infrastruktur-Deployments blockieren Loeschungen und Ersetzungen.
+
 ## 1.1.0 - 2026-10-21
 
 ### Added

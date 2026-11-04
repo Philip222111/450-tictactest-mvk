@@ -27,3 +27,30 @@ bin/
 
 # Local assignment reference; not an application or test resource.
 /src/test/java/ch/bbw/m450/tictactoe/*.pdf
+
+# OpenTofu: lokale Arbeitsdaten und Secrets
+**/.terraform/
+.terraform.tfstate.lock.info
+*.tfstate
+*.tfstate.*
+*.tfplan
+*.tfvars
+*.tfvars.json
+!*.tfvars.example
+!.terraform.lock.hcl
+*.pem
+*.key
+id_rsa*
+id_ed25519*
+*.pub
+.aws/
+credentials
+secrets/
+*.secret
+*.secrets
+.env
+.env.*
+
+/infrastructure/backend.tf
+/artifacts/
+/bundle/
