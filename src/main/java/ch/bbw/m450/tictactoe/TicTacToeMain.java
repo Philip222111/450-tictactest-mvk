@@ -19,6 +19,7 @@ public class TicTacToeMain {
     // Keep the standard JVM entry-point signature; command-line options are not used.
     @SuppressWarnings("java:S1172")
     public static void main(String[] args) {
+        System.out.println("TicTacTest: X gegen GreedyPlayer");
         play(new HumanPlayer(), new GreedyPlayer());
     }
 
