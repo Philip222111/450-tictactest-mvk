@@ -9,7 +9,7 @@
 - Dunkelblauer Hintergrund im Frontend.
 
 ### Fixed
-- Lokaler Windows-Start wartet auf das Leeren des ConPTY-Ausgabepuffers.
+- Windows-ConPTY-Einschraenkung dokumentiert; lokaler Linux-Container als Alternative.
 
 ## 1.3.1 - 2026-11-04
 
