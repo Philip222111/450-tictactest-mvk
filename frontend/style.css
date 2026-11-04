@@ -1,5 +1,5 @@
 :root{color-scheme:dark;font-family:system-ui;background:#11202b;color:#edf5fa}
 main{max-width:960px;margin:3vh auto;padding:24px}h1{font-size:2.6rem}
-button{background:#76dec3;color:#11202b;font:inherit;border:0;border-radius:8px;padding:12px;cursor:pointer}
+button{background:#ffbf66;color:#11202b;font:inherit;border:0;border-radius:8px;padding:12px;cursor:pointer}
 iframe{display:block;width:100%;height:460px;margin-top:18px;border:1px solid #537286;border-radius:8px}
 #versions{color:#a5ddff}

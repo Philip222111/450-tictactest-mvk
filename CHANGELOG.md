@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.3.1 - 2026-11-04
+
+### Added
+- Manueller Release-B-Nachweis fuer die getrennte Frontend-Auslieferung.
+
+### Changed
+- Goldene Schaltflaeche als sichtbare Frontend-Aenderung.
+
+### Fixed
+- Keine Backend-Aenderung.
+
 ## 1.3.0 - 2026-11-04
 
 ### Added
