@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.3.3 - 2026-11-04
+
+### Added
+- Begruessung in der Java-Konsole als sichtbarer Backend-only-Nachweis.
+
+### Changed
+- GreedyPlayer bleibt der fest eingestellte Gegner.
+
+### Fixed
+- Frontend-Dateien bleiben gegenueber dem vorherigen Release unveraendert.
+
 ## 1.3.2 - 2026-11-04
 
 ### Added
