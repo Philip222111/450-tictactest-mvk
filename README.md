@@ -108,3 +108,6 @@ GitHub-Regeln. [Pruefungsvorbereitung](PRUEFUNG.md) erklaert die Entscheidungen.
 
 Web-Konsole für das unveränderte Release-JAR, EC2-Installation und automatisches
 Deployment: [Schritt-für-Schritt-Anleitung](CLOUD.md).
+
+Erfolgreiche Releases, Cloud-Tests und unverändertes Wiederholungsdeployment:
+[Nachweise für die drei Cloud-Aufträge](CLOUD_NACHWEIS.md).

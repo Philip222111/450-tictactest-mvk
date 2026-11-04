@@ -1,7 +1,8 @@
 # TicTacTest in der Cloud
 
-Die drei Aufträge sind im Code vorbereitet. AWS-Apply, manuelles Deployment und
-der erste echte Actions-Lauf müssen mit gültigem AWS-Konto durchgeführt werden.
+Die drei Aufträge sind implementiert und am 4. November 2026 in AWS und GitHub
+ausgeführt worden. Release und unverändertes Wiederholungsdeployment waren
+erfolgreich; konkrete Nachweise stehen in [CLOUD_NACHWEIS.md](CLOUD_NACHWEIS.md).
 Die separaten Auftragsdateien aus Teams lagen bei der Umsetzung nicht vor;
 Grundlage ist der übermittelte Auftragstext. Zusätzliche Bewertungskriterien
 aus diesen Dateien gegebenenfalls abgleichen.
@@ -210,8 +211,9 @@ Lokal geprüft am 4. November 2026: Gradle `build` inklusive Java-Tests und
 Coverage-Gate erfolgreich; HTTP-Integrationstest mit echtem JAR erfolgreich
 (vollständige Partie, getrennte Sitzungen, ungültiger Zug, unbekannte Sitzung).
 OpenTofu `fmt -check` und `validate`, YAML-Parsing und `git diff --check`
-erfolgreich. AWS-Apply, Linux-Service und GitHub-Deployment sind noch nicht
-im echten Cloud-Betrieb getestet.
+erfolgreich. AWS-Apply, Linux-Service, S3-Migration, Release-Deployment und
+unverändertes Wiederholungsdeployment sind ebenfalls erfolgreich geprüft;
+siehe [Cloud-Nachweis](CLOUD_NACHWEIS.md).
 
 Integrationstest wiederholen (Java 25 muss über `JAVA` oder PATH verfügbar sein):
 
