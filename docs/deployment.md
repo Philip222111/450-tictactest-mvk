@@ -161,7 +161,7 @@ Workflows für Ereignisse aus; er ersetzt keine komponentenbezogene Release-Diff
 | frontend/ | Frontend |
 | deploy/, infrastructure/runtime/, scripts/release_assets.py | beide (gemeinsamer Betrieb/Packaging) |
 | VERSION, CHANGELOG.md, docs/, README, Tests | keine App-Komponente |
-| Workflow-Dateien | Deployment-/Release-Werkzeug; kein automatischer App-Neustart |
+| Workflow-Dateien, scripts/publish_release.py, scripts/deploy_cloud.py | Transport-/Release-Werkzeug; kein automatischer App-Neustart |
 
 Die Versionsnummer allein zählt nicht als Backend-Änderung: Ein neuer
 JAR-Manifestwert würde sonst jeden Frontend-Release zum Backend-Release machen.
@@ -248,6 +248,22 @@ der Lab-Plattform. Der vollstaendige destroy/apply-Versuch wurde auf dem Lern-St
 und Release 1.3.4 auf der neuen Instanz wiederhergestellt. Alte und neue Werte
 sowie der erfolgreiche Actions-Lauf stehen im Nachweis. Nur ein echter
 Session-Wechsel ueber die Learner-Lab-Oberflaeche bleibt manuell zu pruefen.
+
+### Letzter manueller Plattformtest beim nächsten Unterricht
+
+1. Vor dem Beenden die Spieladresse und beide HTTP-Versionen notieren. Nach
+   dem Dokumentations-Release 1.3.5 laufen absichtlich beide App-Komponenten
+   weiterhin mit 1.3.4.
+2. In der Learner-Lab-Oberfläche **End Lab** ausführen, danach **Start Lab**
+   und auf die Bereitschaft warten. Kein Lab-Reset verwenden.
+3. Die neue vollständige Credential-Dreiergruppe lokal und vor dem nächsten
+   CI-Deploy in den drei GitHub-Secrets der Umgebung production aktualisieren.
+4. Dieselbe Spieladresse öffnen, eine Partie spielen und `/backend-version.json`
+   sowie `/version.json` vergleichen. Es soll kein App-Deployment nötig sein.
+   Falls die Plattform die EC2 gestoppt lässt, dieselbe Instanz starten und
+   diesen Unterschied zum automatischen Lab-Wiederanlauf dokumentieren.
+5. Ergebnis und Datum im Nachweis ergänzen. Damit wird das Plattformverhalten
+   zusätzlich zu den bereits bestandenen EC2-Stop/Start- und Neuaufbau-Tests belegt.
 
 ## Reflexion: Weg einer Änderung und Promotion
 
