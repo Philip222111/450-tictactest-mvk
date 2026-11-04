@@ -78,8 +78,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ github.ref_name }}
         run: |
-          gh release create "$TAG" release-assets/* --verify-tag --title "TicTacTest $TAG" --notes-file release-notes.md
-          gh release upload "$TAG" release-assets/deployment.json.sha256 --clobber
+          python3 scripts/publish_release.py
 
       - name: Veröffentlichtes Artefakt herunterladen und testen
         env:

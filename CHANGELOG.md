@@ -11,6 +11,7 @@
 
 ### Fixed
 - Keine Neuerstellung der EC2 bei einer reinen Dienstkonfigurationsaenderung.
+- Release-Assets werden vor der Veroeffentlichung im Draft geprueft; GitHub-5xx werden wiederholt.
 
 ## 1.3.3 - 2026-11-04
 
