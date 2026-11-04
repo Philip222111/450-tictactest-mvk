@@ -8,10 +8,17 @@ from pathlib import Path
 import re
 import subprocess
 import tempfile
+import sys
+import time
 import zipfile
 
 
 def main():
+    if len(sys.argv) == 3 and sys.argv[1] == '--run-jar':
+        result = subprocess.run([os.environ.get('JAVA', 'java'), '-Xmx48m', '-jar', sys.argv[2]])
+        # Windows ConPTY otherwise closes before ttyd flushes the final board.
+        time.sleep(1)
+        raise SystemExit(result.returncode)
     parser = argparse.ArgumentParser()
     parser.add_argument('--jar', type=Path, required=True)
     parser.add_argument('--frontend', type=Path, required=True)
@@ -41,8 +48,8 @@ def main():
         with zipfile.ZipFile(args.frontend) as archive:
             archive.extractall(folder)
         process = subprocess.Popen([str(args.ttyd.resolve()), '-i', '127.0.0.1', '-p', str(args.console_port),
-                                    '-W', '-m', '8', '-b', '/terminal', os.environ.get('JAVA', 'java'),
-                                    '-Xmx48m', '-jar', str(args.jar.resolve())])
+                                    '-W', '-m', '8', '-b', '/terminal', sys.executable,
+                                    str(Path(__file__).resolve()), '--run-jar', str(args.jar.resolve())])
         server = ThreadingHTTPServer(('127.0.0.1', args.port), functools.partial(Handler, directory=folder))
         print(f'Frontend: http://localhost:{args.port} | Terminal: http://localhost:{args.console_port}/terminal/', flush=True)
         try:

@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.3.2 - 2026-11-04
+
+### Added
+- Automatischer Frontend-only-Release als Trennungsnachweis.
+
+### Changed
+- Dunkelblauer Hintergrund im Frontend.
+
+### Fixed
+- Lokaler Windows-Start wartet auf das Leeren des ConPTY-Ausgabepuffers.
+
 ## 1.3.1 - 2026-11-04
 
 ### Added
