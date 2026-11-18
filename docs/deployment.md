@@ -147,8 +147,15 @@ Frontend-Dateien und veröffentlicht JAR, Frontend-ZIP, lokale Tools,
 `deployment.json` und SHA-256-Dateien. Deployment baut nichts. Die Java-Quellen
 werden beim Betrieb nicht geändert oder auf EC2 kompiliert.
 
-`scripts/release_assets.py` sucht mit `git describe --tags --abbrev=0 --match
-'v[0-9]*' TAG^` den vorherigen erreichbaren App-Release-Tag. Es vergleicht die
+`scripts/release_assets.py` liest alle Seiten der GitHub-Release-API und wählt
+den zuletzt veröffentlichten App-Release, dessen Tag ein Git-Vorfahre des
+Zieltags ist. Bei gleicher Veröffentlichungszeit entscheidet der Tagname.
+Drafts, reine Git-Tags und Devcontainer-Releases sind keine Kandidaten. Beim
+erneuten Paketieren eines bereits veröffentlichten Releases werden später
+veröffentlichte Releases ausgeschlossen. API-, Authentisierungs- und Git-Fehler
+brechen ab; nur eine erfolgreiche Suche ohne Kandidaten gilt als erster Release.
+Das Paketieren benötigt deshalb `gh` mit Repository-Lesezugriff (`GH_TOKEN` in CI).
+Es vergleicht die
 vollständige Strecke `git diff --name-only PREVIOUS TAG`, nicht nur den letzten
 Commit. Sonst gingen Änderungen aus mehreren Commits zwischen Releases verloren.
 Devcontainer-Tags werden ausgeschlossen. Beim ersten Release gilt beides als
@@ -157,7 +164,7 @@ Workflows für Ereignisse aus; er ersetzt keine komponentenbezogene Release-Diff
 
 | Pfade | Wirkung |
 |---|---|
-| src/main/, build.gradle, settings.gradle, gradle/, gradle.properties | Backend |
+| src/main/, build.gradle, settings.gradle, gradle/, gradle.properties, gradlew, gradlew.bat | Backend |
 | frontend/ | Frontend |
 | deploy/, infrastructure/runtime/, scripts/release_assets.py | beide (gemeinsamer Betrieb/Packaging) |
 | VERSION, CHANGELOG.md, docs/, README, Tests | keine App-Komponente |
@@ -180,6 +187,13 @@ für „Frontend-only“; dieser Nachweis benötigt einen normalen neuen Release
 
 Die folgenden Schritte sind identisch zur CI. Der Repo-Checkout stellt nur das
 Deployment-Werkzeug; JAR und Frontend stammen ausschliesslich aus dem Release.
+Auch der manuelle Python-Deploy benötigt jetzt eine angemeldete GitHub CLI mit
+Release-Lesezugriff. Er prüft vor jedem S3-Upload, dass der angeforderte Tag
+streng `vMAJOR.MINOR.PATCH` entspricht und ein passender veröffentlichter Release
+mit `isDraft=false` und gesetztem `publishedAt` existiert. Derselbe Check läuft
+im Workflow bereits vor dem Download. API-Fehler, Drafts und fehlende Releases
+brechen ohne Upload ab. Tag, Manifest-Prüfsumme und beide Artefakt-Hashes werden
+vor dem Upload geprüft.
 Assets mit Browser oder `gh release download TAG --dir release-assets`
 herunterladen. Für einen neuen Tag einen leeren Downloadordner verwenden.
 
@@ -205,16 +219,37 @@ Pipeline verwendet dieselben S3-/SSM-Schritte. S3 liegt privat; auch private
 GitHub-Repositories funktionieren, weil der Actions-Job Assets mit GITHUB_TOKEN
 liest und die EC2 nur über ihre Rolle aus S3 liest.
 
-Der Installer prüft Prüfsummen und JAR-Manifest, startet das neue JAR probeweise
-und wartet höchstens 20 Sekunden auf den Spielprompt. Erst dann wird es
-installiert und ttyd neu gestartet. Ein defektes JAR lässt die bisherige Version
-weiterlaufen; bei einem späteren Dienstfehler wird das vorige JAR wiederhergestellt.
-Danach prüft der Job beide tatsächlich erwarteten Versionen öffentlich per HTTP
+Der Installer prüft Prüfsummen und JAR-Manifest und startet das neue JAR vorab
+probeweise. Nach Installation und ttyd-Neustart genügt der Token-Endpunkt allein
+nicht: Das installierte JAR wird zusätzlich mit dem aus systemd gelesenen User
+und der Group gestartet, ohne geerbte Root-Zusatzgruppen. Das Gegner-Menü wird
+gegebenenfalls mit 1 beantwortet; erst der Zugprompt bestätigt den Spielstart.
+Jede Probe hat höchstens 20 Sekunden und ihre Prozessgruppe wird danach beendet.
+Das unterstützt auch ältere JARs ohne Gegner-Menü. Erst anschliessend wird die
+Backend-Versionsdatei atomar aktualisiert. Bei Aktivierungsfehlern werden das
+vorige JAR und die Metadaten wiederhergestellt, der Dienst neu gestartet und das
+alte Spiel erneut als Dienstbenutzer geprüft. Auch ein fehlgeschlagener
+Wiederherstellungsversuch wird als Fehler weitergegeben. Ohne vorherige
+Installation wird der fehlgeschlagene Dienst gestoppt und das neue JAR entfernt.
+
+Vor einem selektiven Deployment liest der Job die öffentlichen Versionen der
+laut Manifest unveränderten Komponenten. Sind diese nicht erreichbar, bricht er
+vor dem Upload ab; ein bewusster manueller FORCE-Deploy benötigt diese Baseline
+nicht. Geänderte Komponenten müssen unabhängig vom Installer-Bericht exakt die
+Version des geprüften Releases liefern, unveränderte ihren vorher gelesenen
+Stand. Berichtstag, boolesche Änderungsflags und Berichtsversionen werden gegen
+diese Vorgaben geprüft. Der Installer darf bei Vorgängerabweichung beide
+Komponenten aktualisieren, aber keine laut Manifest erforderliche auslassen.
+Ein falscher Bericht zusammen mit denselben falschen HTTP-Versionen reicht
+deshalb nicht mehr für Erfolg. Danach prüft der Job beide Versionen öffentlich per HTTP
 (bis 20 Versuche à 2 Sekunden, HTTP-Timeout 4 Sekunden). Fehler schlagen den
 Workflow fehl. SSM hat zusätzlich einen 240-Sekunden-Gesamttimeout.
 
 Frontend-ZIP wird in ein eigenes Versionsverzeichnis entpackt, Pfadtraversal und
-`config.js` darin werden abgewiesen. Ein atomarer Symlink ersetzt den gesamten
+`config.js` darin werden abgewiesen. Jeder Aktivierungsversuch verwendet ein
+frisches Verzeichnis mit Versionspräfix und Zufallssuffix, auch bei erneutem
+Deploy derselben Version. Der aktive Baum wird niemals vorab gelöscht. Erst nach
+vollständigem Kopieren und Setzen der Leserechte ersetzt ein atomarer Symlink den gesamten
 ausgelieferten Baum; entfernte Dateien verschwinden damit ebenfalls. Die von
 IaC erzeugte Datei `/opt/tictactest/config.js` liegt ausserhalb dieses Baums und
 wird über eine eigene nginx-Location ausgeliefert. Ein versehentliches Löschen
@@ -223,6 +258,13 @@ gar nicht verwalten. Frontend-Deploys starten ttyd nicht neu.
 
 GitHub `concurrency` serialisiert Deployments; ein zusätzlicher `flock` auf der
 Instanz schützt auch vor einem gleichzeitig gestarteten manuellen Deploy.
+Der Infrastruktur-Bootstrap verwendet denselben Lock bereits vor dem Schreiben
+der Runtime-Dateien. Damit werden auch Erstboot und SSM-Provisionierung gegen
+App-Aktivierungen serialisiert. Der Deployment-Workflow archiviert einen
+erfolgreichen HTTP-Prüfbericht als `deployment-result-…`-Artefakt.
+Runtime-Dateien werden vor der Veröffentlichung vollständig vorbereitet und
+einzeln atomar ersetzt. Das schliesst auch das Lesen des Installers vor seinem
+Lock ein; Details und verbleibende Grenzen stehen im folgenden Runtime-Nachtrag.
 
 ## Rollback, Neustart und Wiederaufbau
 
@@ -303,6 +345,228 @@ ihren eigenen zuletzt deployten Stand oder Komponenten-Digests. Unser Iststand-
 Abgleich erkennt Abweichungen und stellt dann beide Zielkomponenten her; eine
 ausgebaute Promotion-Pipeline würde pro Umgebung die wirklich fehlenden Digests
 übertragen und nur nötige Komponenten aktivieren.
+
+## Lokale Absicherung vom 18. November 2026
+
+Die P1/P2-Korrekturen wurden ausschliesslich lokal implementiert. Es erfolgten
+kein AWS-Deployment, kein Apply, kein Push, keine Release-Veröffentlichung und
+keine Änderung von Secrets. `scripts/test_deployment_safety.py` enthält
+Regressionen für falsche Installer-/HTTP-Versionen, selektive Stände, FORCE,
+Drafts und fehlende Releases, Manifest-/Artefaktprüfung, veröffentlichte
+Vorgänger einschliesslich Pagination und Fehlern, Dienstbenutzer-Spielstart,
+Legacy-JARs, Timeout, Backend-Rollback und Frontend-Aktivierungsfehler.
+
+Ausgeführt mit Python 3.12 unter Windows:
+
+```powershell
+python -B -m unittest discover -s scripts -p 'test_*.py' -v
+tofu '-chdir=infrastructure' fmt -check -recursive
+tofu '-chdir=infrastructure' validate -no-color
+git diff --check
+```
+
+Ergebnis: 29 Tests, 28 bestanden, 1 übersprungen; Exit-Code 0. Der echte
+Symlink-Wechseltest wird auf diesem Windows-Konto mangels Symlink-Rechten
+übersprungen. Die Fehlerbereinigung bei gescheitertem Umschalten wurde mit
+simulierten Betriebssystemaufrufen erfolgreich getestet. Formatprüfung,
+OpenTofu-Validierung und Whitespace-Prüfung bestanden ebenfalls. AWS, GitHub,
+systemd und Java-Prozesse sind in den neuen Regressionstests simuliert.
+Die vorhandene Linux-CI und jetzt auch der Release-Job führen diese Tests aus;
+ein neuer Remote-Lauf wurde noch nicht gestartet.
+
+Verbleibende Abnahme nach ausdrücklicher Freigabe:
+
+- Den geänderten Infrastruktur-Installer und Bootstrap-Lock bewusst über den
+  Infrastrukturprozess aktivieren. Ein reines App-Deployment aktualisiert sie
+  weiterhin nicht. Die laufende EC2 wurde hier nicht geändert.
+- Auf Linux den echten Symlink-Wiederholungsdeploy und einen Java-Start als
+  systemd-Benutzer einschliesslich Rückkehr zur gesunden Vorversion prüfen.
+- Die Probe prüft JAR-Lesbarkeit, Benutzer/Gruppe und Spielprompt, aber nicht
+  den vollständigen systemd-Sandbox- und Browser/WebSocket-Pfad. Eine reale
+  Browser-Partie bleibt erforderlich.
+- GitHub-Draft-Ablehnung, API-Pagination und selektive Releases in der realen
+  Pipeline bestätigen. Die Leseabfragen benötigen gültige GitHub-Anmeldung;
+  API-Fehler werden absichtlich nicht als erster Release behandelt.
+- Alte Frontend-Verzeichnisse werden zur Sicherheit nicht automatisch gelöscht;
+  Aufbewahrung und freien Plattenplatz kontrollieren. Backend- und Frontend-
+  Aktivierung bilden weiterhin keine gemeinsame Transaktion: Schlägt das
+  Frontend nach erfolgreichem Backend fehl, bleibt der Workflow rot und der
+  gewünschte Release muss gezielt erneut bereitgestellt werden.
+- RAM-/Parallelität, echter Lab-Sessionwechsel und Credential-Erneuerung bleiben
+  die bereits dokumentierten manuellen Nachweise. Concurrency garantiert
+  gegenseitigen Ausschluss, aber keine FIFO-Reihenfolge automatischer Releases.
+
+## Nachtrag: atomare Runtime-Aktualisierung, 18. November 2026
+
+Der frühere Bootstrap schrieb Runtime-Dateien direkt an ihren aktiven Pfad.
+Ein Python-Prozess liest und kompiliert `deploy_release.py` jedoch bereits vor
+dem Lock im `__main__`-Block. Gegenseitiger Ausschluss der späteren Aktivierung
+allein verhinderte deshalb kein Lesen einer gerade erst teilweise geschriebenen
+Quelldatei. Dieser Schreibpfad ist jetzt ersetzt; es wurde nichts auf AWS aktiviert.
+
+### Ablauf und Lock
+
+`infrastructure/web.tf` verwendet weiterhin denselben Bootstrap für user_data
+und das SSM-Dokument. Er öffnet `/var/lock/tictactest-deployment.lock` im
+Append-Modus und hält den exklusiven Lock ab dem Beginn. Die Lockdatei selbst
+wird weder gelöscht noch per Rename ersetzt; alle Teilnehmer sperren denselben
+Inode. Es werden keine neuen Cloud-Ressourcen oder IAM-Rechte benötigt.
+
+Der neue, eigenständige Helfer `infrastructure/runtime/atomic_runtime.py` wird
+zuerst direkt aus dem unveränderlichen Bootstrap-Payload über Python-stdin
+ausgeführt. Er muss deshalb nicht aus einer möglicherweise gleichzeitig
+aktualisierten Datei geladen werden. Das gzip/base64-kodierte Bundle enthält
+den Helfer selbst, den Deployment-Installer, das Provisionierungsskript, die
+systemd-Unit und die nginx-Site. Prüfsummen und vollständige Staging-Dateien
+sowie Python- und Bash-Syntax werden vor der ersten Veröffentlichung geprüft.
+
+Jede Staging-Datei liegt im Zielverzeichnis und damit auf demselben Dateisystem.
+Inhalt und Modus werden vollständig geschrieben und die Datei synchronisiert;
+anschliessend veröffentlicht `os.replace` sie atomar. Ein Leser sieht dadurch
+eine vollständige alte oder neue Datei. Ein bereits geöffneter Linux-Deskriptor
+liest den alten Inode weiter. Der Deployment-Installer bleibt eigenständig und
+importiert keinen austauschbaren projektspezifischen Runtime-Helfer.
+
+`provision.sh` übernimmt einen bereits geerbten fd 9 nur, wenn er auf die
+tatsächliche Lockdatei zeigt. Bei direktem Aufruf öffnet es diese selbst und
+sperrt sie vor Paket-/Dateiänderungen. Der Python-Helfer verwendet denselben
+geerbten offenen Dateideskriptor oder erwirbt bei eigenständigem Aufruf den
+Lock selbst. Er entsperrt den geerbten Lock nicht beim Rücksprung. Damit wird
+ein Selbst-Deadlock zwischen Bootstrap, Shell und Python vermieden.
+
+Auch das geprüfte ttyd-Binary, `config.js` und die nginx-Hauptkonfiguration
+werden jetzt über den Helfer atomar veröffentlicht. Downloads verwenden einen
+eindeutigen temporären Namen und die festgelegte Prüfsumme. Die erzeugte
+nginx-Hauptkonfiguration wird vor ihrem Austausch mit `nginx -t -c` geprüft.
+Temporäre Dateien werden bei normalen Fehlern bereinigt.
+
+### Fehler und Erhalt der Anwendung
+
+Fehlgeschlagene Bundle-Prüfungen verändern keine aktive Runtime-Datei. Scheitert
+ein Dateiaustausch während der Bundle-Veröffentlichung, werden bereits
+veröffentlichte Dateien mit ihren früheren Inhalten und Modi atomar
+wiederhergestellt; neu erzeugte Ziele werden entfernt. Kann auch diese
+Wiederherstellung wegen eines anhaltenden Speicher-/Dateisystemfehlers nicht
+ausgeführt werden, bricht der Helfer ausdrücklich mit `Runtime rollback incomplete`
+ab. Das ist kein erfolgreicher Lauf und erfordert eine manuelle Wiederherstellung.
+
+Eine reine Runtime-Provisionierung ersetzt kein `app.jar`, keinen Frontend-Baum,
+keine Komponenten-Versionsdatei und keinen Deployment-State. Unterschiedliche
+Backend-/Frontend-Versionen bleiben erhalten. nginx und ttyd werden weiterhin
+neu gestartet; laufende Partien gehen dabei verloren. Eine App-Version wird
+weiterhin ausschliesslich durch den separaten Release-Installer aktiviert.
+
+Die Atomarität gilt pro Datei, nicht als atomarer Austausch des gesamten
+Dateisatzes. Kooperierende Provisionierungs-/Deployment-Prozesse sind durch den
+Lock serialisiert. Ein bereits vor dem Austausch gestarteter Interpreter darf
+noch den vollständigen alten Installer ausführen. Ein Prozessabbruch mit
+SIGKILL oder ein Stromausfall während mehrerer Renames bietet keine vollständige
+Bundle-Transaktion; die Verzeichnis-Renames sind nicht zusätzlich per fsync
+abgesichert. Die späteren Paketinstallationen, generierten Dateien und
+Dienstneustarts bilden ebenfalls keine gemeinsame Rollback-Transaktion mit dem
+Bundle. Ein späterer Provisionierungsfehler wird weiterhin als Fehler gemeldet.
+Andere administrative Programme müssen den Lock respektieren.
+
+### Lokale Nachweise und verbleibende Abnahme
+
+Neue Tests: `scripts/test_atomic_runtime.py` mit 13 Fällen. Der Race-Test hält
+einen Schreibvorgang nach der halben neuen Datei an und startet dann einen
+echten Python-Interpreter gegen den aktiven Pfad: Er liest vollständig den
+alten Code; nach dem Rename liest ein weiterer Interpreter vollständig den
+neuen Code. Weitere Tests prüfen Schreib-/fsync-/Rename-Fehler, fehlerhafte
+Prüfsummen und Syntax, Bundle-Rollback einschliesslich fehlgeschlagenem Rollback,
+Dateimodi und den unveränderten App-/Versions-/State-Inhalt.
+
+Gesamtergebnis unter Windows: **42 Tests, 38 bestanden, 4 übersprungen**,
+Exit-Code 0. Drei neue Tests benötigen Linux/POSIX: alter geöffneter Inode,
+echter gegenseitiger flock-Ausschluss und Wiederverwendung von fd 9 ohne
+Selbst-Deadlock oder vorzeitiges Entsperren. Der vierte Skip ist der vorhandene
+Frontend-Symlink-Test. Bash-Syntaxaufrufe sind auf Windows simuliert; unter
+Linux prüfen dieselben Tests zusätzlich echte Bash-Syntax. Es wurde kein
+Paketmanager, systemd, AWS oder GitHub durch diese Tests verändert.
+
+```powershell
+python -B -m unittest discover -s scripts -p 'test_*.py' -v
+tofu '-chdir=infrastructure' fmt -check -recursive
+tofu '-chdir=infrastructure' validate -no-color
+git diff --check
+```
+
+Python-Syntax, OpenTofu-Formatierung/-Validierung und Whitespace-Prüfung wurden
+lokal geprüft. In einem temporären, provider- und backendfreien HCL-Modul wurde
+der tatsächliche `base64gzip(local.bootstrap)` mit OpenTofu ausgewertet:
+11 920 komprimierte Bytes; damit bleibt dieser Stand unter 16 384 Bytes.
+Eine weitere Vergrösserung der Runtime muss erneut gegen dieses Limit geprüft werden.
+
+### Abschliessender lokaler Prüfnachtrag, 18. November 2026
+
+Die anschliessende vollständige lokale Prüfung hat die zuvor unter Windows
+übersprungenen Fälle unter echtem Linux erfolgreich nachgetestet. Dafür wurde
+eine isolierte Projektkopie auf einem nativen Linux-Dateisystem unter `/run`
+der vorhandenen Docker-WSL-Distribution verwendet. Python 3.12.16, Bash 5.2.37
+und Java 25 wurden temporär bereitgestellt; es erfolgte keine systemweite
+Paketinstallation oder WSL-Reparatur. Docker selbst war nicht erreichbar.
+
+| Prüfung | Abschliessendes Ergebnis | Exit-Code |
+|---|---|---|
+| Python-Skripttests unter Linux | 42/42 bestanden, keine Skips | 0 |
+| Web-Integration unter Linux mit echtem Release-JAR | 1/1 bestanden | 0 |
+| JAR-Smoke-Test unter Linux | vollständige Partie mit 0, 4, 8 bestanden | 0 |
+| Java-Tests mit vorhandenem Java 25 unter Windows | 116 Testausführungen erfolgreich, keine Fehler/Skips | 0 |
+| JaCoCo-Coverage-Gate | 109/109 Branches abgedeckt | 0 |
+| PIT | 85/85 Mutationen erkannt | 0 |
+| Alle vier GitHub-Workflows, actionlint 1.7.12 | keine Findings | 0 |
+| Bash-Syntax des Provisionierungsskripts und generierten Bootstraps | bestanden | 0 |
+| Python-Syntax, 18 Dateien via `ast.parse` | bestanden | 0 |
+| OpenTofu `fmt -check -recursive` und `validate` | beide bestanden | jeweils 0 |
+| `git diff --check` | bestanden | 0 |
+
+Insbesondere bestanden die echten Datei-Locks, geerbten Lock-Deskriptoren,
+offenen Inodes während atomarer Dateiersetzung und der atomare
+Frontend-Symlink-Wechsel. Damit sind alle vier früheren Windows-Skips lokal
+unter Linux nachgewiesen. Die Windows-Ergebnisse weiter oben dokumentieren
+historische Zwischenstände und stellen keine noch offenen Linux-Tests dar.
+actionlint lief mit deaktivierten optionalen ShellCheck-/Pyflakes-Aufrufen;
+seine Actions-, YAML- und Ausdrucksprüfungen waren aktiv.
+
+Ausgeführt in der isolierten Linux-Kopie mit gesetztem `TEST_JAR` und Java im PATH:
+
+```bash
+python3 -B -m unittest discover -s scripts -p 'test_*.py' -v
+python3 -B -m unittest discover -s web -p test_server.py -v
+python3 -B scripts/smoke_jar.py "$TEST_JAR"
+bash -n infrastructure/runtime/provision.sh
+# Zusätzlich: bash -n auf dem tatsächlich mit OpenTofu erzeugten Bootstrap.
+```
+
+Java-Tests, Coverage-Gate und Mutationstests wurden mit dem vorhandenen
+Java 25.0.4 aus dem Gradle-JDK-Cache erneut ausgeführt:
+
+```powershell
+.\gradlew.bat --offline --no-daemon `
+  "-Dorg.gradle.java.installations.paths=$env:JAVA_HOME" `
+  test jacocoTestCoverageVerification pitest --rerun-tasks
+```
+
+`JAVA_HOME` zeigte dabei nur für den Prüfprozess auf dieses Java-25-JDK.
+Die Prüfung hat keine AWS-Ressourcen, GitHub-Ressourcen oder Secrets verändert.
+Die lokale Implementierung ist für die Cloud-Abnahme vorbereitet; tatsächliche
+SSM-/systemd-/nginx-Aktivierung und Browser-WebSocket-Nachweise bleiben separat.
+
+Nach separater Freigabe bleiben erforderlich:
+
+1. Nach Übernahme des vollständigen Commits die neue Remote-CI bestätigen.
+   Die vollständige lokale Linux-Suite und Bash-Syntaxprüfung sind bereits bestanden.
+2. Aktuellen AWS-Plan prüfen: SSM-Dokument/Association und user_data-Update,
+   kein ungeplanter EC2-Ersatz. Es wurde hier kein Cloud-Plan oder Apply ausgeführt.
+3. Runtime bewusst aktivieren, Installer-/Helfer-Hashes und Dienste bestätigen.
+4. Gleichzeitigen SSM-Provisionierungs- und Release-Deployment-Lauf beobachten;
+   beide müssen sich am gleichen Lock serialisieren und vollständig enden.
+5. Bei Runtime-only-Update JAR-Hash, Frontend-Ziel, beide HTTP-Versionen und
+   Deployment-State vor/nach vergleichen; anschliessend echte Browserpartie prüfen.
+6. Einen kontrollierten Provisionierungsfehler und die Wiederherstellung in
+   einer isolierten Testumgebung belegen. Ein echter Stromausfall oder SIGKILL
+   wird durch die normalen Fehler-Rollbacktests nicht nachgewiesen.
 
 Quellen: [GitHub Secrets](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/use-secrets),
 [OIDC und AWS](https://docs.github.com/en/actions/how-tos/secure-your-work/security-harden-deployments/oidc-in-aws),

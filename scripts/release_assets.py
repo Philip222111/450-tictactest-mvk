@@ -2,15 +2,46 @@
 import hashlib
 import json
 from pathlib import Path
-import re
 import subprocess
 import sys
 import zipfile
 from urllib.request import urlopen
+from release_metadata import validate_tag
 
-BACKEND = ('src/main/', 'build.gradle', 'settings.gradle', 'gradle/', 'gradle.properties')
+BACKEND = ('src/main/', 'build.gradle', 'settings.gradle', 'gradle/', 'gradle.properties', 'gradlew')
 FRONTEND = ('frontend/',)
 SHARED = ('scripts/release_assets.py', 'deploy/', 'infrastructure/runtime/')
+
+
+def previous_release(tag):
+    """Latest published ancestor (publication time, then tag); drafts/bare tags excluded."""
+    validate_tag(tag)
+    subprocess.run(['git', 'rev-parse', '--verify', tag + '^{commit}'],
+                   capture_output=True, text=True, check=True)
+    result = subprocess.run(
+        ['gh', 'api', '--paginate', '--slurp', 'repos/{owner}/{repo}/releases?per_page=100'],
+        capture_output=True, text=True, check=True, timeout=60)
+    releases = [release for page in json.loads(result.stdout) for release in page]
+    current = next((r for r in releases if r['tag_name'] == tag and not r['draft'] and r['published_at']), None)
+    candidates = []
+    for release in releases:
+        candidate = release['tag_name']
+        if candidate == tag or release['draft'] or not release['published_at']:
+            continue
+        try:
+            validate_tag(candidate)
+        except ValueError:
+            continue
+        if current and release['published_at'] > current['published_at']:
+            continue
+        # Missing fetched tags and other git errors are errors, not "first release".
+        ancestor = subprocess.run(['git', 'merge-base', '--is-ancestor', candidate, tag],
+                                  capture_output=True, text=True)
+        if ancestor.returncode not in (0, 1):
+            raise RuntimeError('Cannot resolve published release ancestry: ' + candidate)
+        if ancestor.returncode == 0:
+            candidates.append((release['published_at'], candidate))
+    return max(candidates)[1] if candidates else None
 
 
 def changes(paths):
@@ -20,12 +51,9 @@ def changes(paths):
 
 
 def package(tag, target=Path('release-assets')):
-    if not re.fullmatch(r'v\d+\.\d+\.\d+', tag):
-        raise ValueError('Expected semantic release tag')
+    validate_tag(tag)
     version = tag[1:]
-    previous = subprocess.run(['git', 'describe', '--tags', '--abbrev=0', '--match', 'v[0-9]*', tag + '^'],
-                              capture_output=True, text=True)
-    previous = previous.stdout.strip() if previous.returncode == 0 else None
+    previous = previous_release(tag)
     paths = subprocess.check_output(['git', 'diff', '--name-only', previous, tag], text=True).splitlines() if previous else []
     changed = changes(paths) if previous else {'backend': True, 'frontend': True}
     target.mkdir(exist_ok=True)
