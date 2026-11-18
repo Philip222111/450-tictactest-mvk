@@ -1,4 +1,5 @@
 """CI and manual deployment: consumes release-assets, never builds or runs IaC."""
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -6,6 +7,51 @@ import re
 import subprocess
 import time
 from urllib.request import urlopen
+from release_metadata import published_release
+
+PARTS = {'backend': '/backend-version.json', 'frontend': '/version.json'}
+
+
+def verified_manifest(tag, directory=Path('release-assets')):
+    published_release(tag)
+    data = (directory / 'deployment.json').read_bytes()
+    digest, name = (directory / 'deployment.json.sha256').read_text().split()
+    if name != 'deployment.json' or hashlib.sha256(data).hexdigest() != digest:
+        raise ValueError('Invalid release manifest checksum')
+    manifest = json.loads(data)
+    if manifest['tag'] != tag or manifest['version'] != tag[1:]:
+        raise ValueError('Release manifest has wrong tag/version')
+    for part in PARTS:
+        if type(manifest['changed'][part]) is not bool:
+            raise ValueError('Invalid component change flag')
+    for name in (f'tictactest-{tag[1:]}.jar', f'tictactest-frontend-{tag[1:]}.zip'):
+        if hashlib.sha256((directory / name).read_bytes()).hexdigest() != manifest['files'][name]:
+            raise ValueError('Release artifact checksum mismatch: ' + name)
+    return manifest
+
+
+def public_version(path):
+    with urlopen(os.environ['APP_URL'].rstrip('/') + path, timeout=4) as response:
+        version = json.load(response)['version']
+    if not isinstance(version, str) or not re.fullmatch(r'\d+\.\d+\.\d+', version):
+        raise ValueError('Invalid public component version')
+    return version
+
+
+def expected_versions(tag, manifest, report, baseline, force):
+    if report.get('tag') != tag:
+        raise ValueError('Installer reported wrong release tag')
+    flags = report['changed']
+    for part in PARTS:
+        if type(flags[part]) is not bool or ((force or manifest['changed'][part]) and not flags[part]):
+            raise ValueError('Installer reported invalid change flags')
+    # The installer may force BOTH components when its persisted predecessor differs.
+    if flags != manifest['changed'] and flags != dict.fromkeys(PARTS, True):
+        raise ValueError('Installer reported inconsistent recovery flags')
+    expected = {part: tag[1:] if flags[part] else baseline[part] for part in PARTS}
+    if any(report['versions'][part] != expected[part] for part in PARTS):
+        raise ValueError('Installer versions differ from independently expected versions')
+    return expected
 
 
 def aws(*args):
@@ -19,6 +65,12 @@ def main():
     tag = os.environ['TAG']
     if not re.fullmatch(r'v\d+\.\d+\.\d+', tag):
         raise ValueError('Invalid tag')
+    manifest = verified_manifest(tag)
+    force_all = os.environ.get('FORCE') == 'true'
+    baseline = {}
+    for part, path in PARTS.items():
+        if not force_all and not manifest['changed'][part]:
+            baseline[part] = public_version(path)
     source = f"s3://{os.environ['ARTIFACT_BUCKET']}/releases/{tag}/"
     subprocess.run(['aws', 's3', 'sync', 'release-assets/', source, '--only-show-errors'], check=True)
     force = ' --force' if os.environ.get('FORCE') == 'true' else ''
@@ -46,12 +98,12 @@ def main():
         break
     else:
         raise RuntimeError('Deployment timed out after 240 seconds')
-    for part, path in [('backend', '/backend-version.json'), ('frontend', '/version.json')]:
-        expected = report['versions'][part]
+    versions = expected_versions(tag, manifest, report, baseline, force_all)
+    for part, path in PARTS.items():
+        expected = versions[part]
         for attempt in range(20):
             try:
-                with urlopen(os.environ['APP_URL'].rstrip('/') + path, timeout=4) as response:
-                    actual = json.load(response)['version']
+                actual = public_version(path)
                 if actual == expected:
                     print(f'{part}: public HTTP version {actual} verified; changed={report["changed"][part]}')
                     break

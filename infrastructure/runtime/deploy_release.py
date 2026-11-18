@@ -1,11 +1,11 @@
 """Infrastructure-owned installer. Only consumes verified GitHub release assets."""
-import fcntl
 import hashlib
 import json
 import os
 from pathlib import Path
 import re
 import selectors
+import signal
 import shutil
 import subprocess
 import sys
@@ -21,29 +21,82 @@ def read_version(path):
     return json.loads(path.read_text())['version'] if path.exists() else None
 
 
-def preflight(jar, version):
+def preflight(jar, version, identity=None):
     with zipfile.ZipFile(jar) as archive:
         manifest = archive.read('META-INF/MANIFEST.MF').decode()
     if not re.search(r'^Implementation-Version: ' + re.escape(version) + r'\s*$', manifest, re.M):
         raise RuntimeError('JAR manifest version differs from release')
-    process = subprocess.Popen(['java', '-Xmx48m', '-jar', str(jar)], stdin=subprocess.PIPE,
-                               stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    command = ['java', '-Xmx48m', '-jar', str(jar)]
+    credentials = ({'user': identity[0], 'group': identity[1], 'extra_groups': []}
+                   if identity else {})
+    process = subprocess.Popen(command, stdin=subprocess.PIPE, start_new_session=True,
+                               stdout=subprocess.PIPE, stderr=subprocess.STDOUT, **credentials)
     try:
-        selector = selectors.DefaultSelector()
-        selector.register(process.stdout, selectors.EVENT_READ)
-        deadline = time.monotonic() + 20
-        output = b''
-        while time.monotonic() < deadline:
-            for key, _ in selector.select(.2):
-                output += os.read(key.fd, 4096)
-                if b'(0-8)' in output or b'Gegner (1=Greedy, 2=Perfect):' in output:
-                    return
-            if process.poll() is not None:
-                break
+        with selectors.DefaultSelector() as selector:
+            selector.register(process.stdout, selectors.EVENT_READ)
+            deadline = time.monotonic() + 20
+            output = b''
+            selected = False
+            while time.monotonic() < deadline:
+                for key, _ in selector.select(.2):
+                    chunk = os.read(key.fd, 4096)
+                    if not chunk:
+                        raise RuntimeError('JAR exited before game prompt')
+                    output += chunk
+                    if b'Gegner (1=Greedy, 2=Perfect):' in output and not selected:
+                        process.stdin.write(b'1\n')
+                        process.stdin.flush()
+                        selected = True
+                    if b'(0-8)' in output and process.poll() is None:
+                        return
+                if process.poll() is not None:
+                    break
         raise RuntimeError('JAR cannot start or has no game prompt within 20 seconds')
     finally:
-        process.kill() if process.poll() is None else None
+        # Stop the isolated probe group, including any descendants.
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
         process.wait()
+        process.stdin.close()
+        process.stdout.close()
+
+
+def service_identity():
+    values = []
+    for property_name in ('User', 'Group'):
+        value = subprocess.check_output(
+            ['systemctl', 'show', 'tictactest', '--property=' + property_name, '--value'], text=True).strip()
+        if not re.fullmatch(r'[a-z_][a-z0-9_-]*', value) or value == 'root':
+            raise RuntimeError('Expected explicit unprivileged systemd User and Group')
+        values.append(value)
+    return tuple(values)
+
+
+def atomic_bytes(path, data):
+    staged = path.with_name(path.name + '.next')
+    staged.write_bytes(data)
+    os.chmod(staged, 0o644)
+    os.replace(staged, path)
+
+
+def activate_frontend(frontend, version):
+    # A fresh directory on the same filesystem also protects re-deploys of the active version.
+    target = Path(tempfile.mkdtemp(prefix='frontend-' + version + '-', dir=ROOT / 'releases'))
+    link = ROOT / 'frontend.next'
+    try:
+        shutil.copytree(frontend, target, dirs_exist_ok=True)
+        os.chmod(target, 0o755)
+        for path in target.rglob('*'):
+            os.chmod(path, 0o755 if path.is_dir() else 0o644)
+        link.unlink(missing_ok=True)
+        link.symlink_to(target, target_is_directory=True)
+        os.replace(link, ROOT / 'frontend')
+    except Exception:
+        link.unlink(missing_ok=True)
+        shutil.rmtree(target)
+        raise
 
 
 def deploy(source, tag, force=False):
@@ -90,6 +143,7 @@ def deploy(source, tag, force=False):
             old = app.read_bytes() if app.exists() else None
             metadata = ROOT / 'backend-version.json'
             old_metadata = metadata.read_bytes() if metadata.exists() else None
+            identity = service_identity()
             try:
                 shutil.copyfile(jar, ROOT / 'app.jar.next')
                 os.chmod(ROOT / 'app.jar.next', 0o644)
@@ -104,24 +158,25 @@ def deploy(source, tag, force=False):
                         time.sleep(.5)
                 else:
                     raise RuntimeError('Terminal did not become healthy')
-                metadata.write_text(json.dumps({'version': version}) + '\n')
-                os.chmod(metadata, 0o644)
+                preflight(app, version, identity=identity)
+                atomic_bytes(metadata, (json.dumps({'version': version}) + '\n').encode())
             except Exception:
                 if old is not None:
-                    app.write_bytes(old)
-                    if old_metadata is not None: metadata.write_bytes(old_metadata)
-                    subprocess.run(['systemctl', 'restart', 'tictactest'], check=False)
+                    atomic_bytes(app, old)
+                    if old_metadata is not None:
+                        atomic_bytes(metadata, old_metadata)
+                    else:
+                        metadata.unlink(missing_ok=True)
+                    subprocess.run(['systemctl', 'restart', 'tictactest'], check=True)
+                    if old_metadata is not None:
+                        preflight(app, json.loads(old_metadata)['version'], identity=identity)
+                else:
+                    subprocess.run(['systemctl', 'stop', 'tictactest'], check=True)
+                    app.unlink(missing_ok=True)
+                    metadata.unlink(missing_ok=True)
                 raise
         if changed['frontend']:
-            target = ROOT / 'releases' / ('frontend-' + version)
-            if target.exists(): shutil.rmtree(target)
-            shutil.copytree(frontend, target)
-            for path in target.rglob('*'):
-                os.chmod(path, 0o755 if path.is_dir() else 0o644)
-            link = ROOT / 'frontend.next'
-            link.unlink(missing_ok=True)
-            link.symlink_to(target)
-            os.replace(link, ROOT / 'frontend')
+            activate_frontend(frontend, version)
         actual = {'backend': read_version(ROOT / 'backend-version.json'),
                   'frontend': read_version(ROOT / 'frontend/version.json')}
         for part in changed:
@@ -132,6 +187,7 @@ def deploy(source, tag, force=False):
 
 
 if __name__ == '__main__':
-    with open('/var/lock/tictactest-deployment.lock', 'w') as lock:
+    import fcntl  # Linux-only locking; helpers remain importable by Windows unit tests.
+    with open('/var/lock/tictactest-deployment.lock', 'a') as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
         deploy(sys.argv[1], sys.argv[2], '--force' in sys.argv[3:])

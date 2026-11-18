@@ -68,8 +68,12 @@ jobs:
       - name: Web-Konsole mit dem Release-JAR testen
         run: TEST_JAR="build/libs/tictactest-$VERSION.jar" python3 -m unittest discover -s web -p test_server.py
 
+      - name: Deployment regression tests (isolated, no cloud)
+        run: python3 -B -m unittest discover -s scripts -p 'test_*.py' -v
+
       - name: Frontend und Deployment-Manifest paketieren
         env:
+          GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
         run: python3 scripts/release_assets.py "$TAG"
 

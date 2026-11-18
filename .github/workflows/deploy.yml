@@ -36,6 +36,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Require an existing published release before any upload
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/release_metadata.py "$TAG"
       - name: Authenticate before any mutation
         run: aws sts get-caller-identity > /dev/null
       - name: Download and verify release assets (no build, no OpenTofu)
@@ -49,5 +53,13 @@ jobs:
           (cd release-assets && sha256sum -c *.sha256)
       - name: Deploy release with S3 and SSM, check public versions
         env:
+          GH_TOKEN: ${{ github.token }}
           FORCE: ${{ github.event_name == 'workflow_dispatch' && 'true' || 'false' }}
         run: python3 scripts/deploy_cloud.py
+      - name: Preserve deployment verification report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-result-${{ github.run_id }}-${{ github.run_attempt }}
+          path: build/deployment-result.json
+          if-no-files-found: ignore
