@@ -137,3 +137,39 @@ wurde über den authentisierten SSM-Kanal verifiziert und lokal hinterlegt.
 
 Secrets-Konzept, alle manuellen Schritte, Änderungspfade, Diagramme und
 Promotion-Strategie: [deployment.md](deployment.md).
+
+## Kurswechsel: neues Learner Lab am 25. November 2026
+
+Die Infrastruktur und das bestehende Release v1.4.0 wurden im neuen AWS-Account
+`590183757243` in `us-east-1` wiederhergestellt. Die älteren Nachweise in diesem Dokument
+beziehen sich auf das vorherige Lab.
+
+| Konfiguration | Neuer Wert |
+|---|---|
+| Lokales AWS-Profil | `learner-lab` |
+| App-URL | http://ec2-54-164-158-179.compute-1.amazonaws.com |
+| EC2-ID | `i-0b8c2d378f9958585` |
+| Elastic IP | `54.164.158.179` |
+| State-Bucket | `tictactest-state-590183757243-us-east-1` |
+| Artefakt-Bucket | `tictactest-artifacts-590183757243-us-east-1` |
+
+Das neue Lab enthielt vor dem Aufbau keine Buckets oder EC2-Instanzen. Für
+dieses separate AWS-Konto wurde ein neues S3-State-Backend initialisiert; der
+alte State wurde nicht migriert oder gelöscht. Beide neuen Buckets blockieren
+öffentlichen Zugriff und verwenden Versionierung. `tofu plan` und `tofu apply`
+waren erfolgreich: zehn Ressourcen erstellt, keine geändert oder gelöscht.
+Ein anschliessender Kontrollplan lieferte `No changes` (Exitcode 0).
+
+Im GitHub-Environment `production` wurden alle drei temporären AWS-Secrets
+sowie `AWS_REGION`, `INSTANCE_ID`, `ARTIFACT_BUCKET` und `APP_URL` aktualisiert.
+Das bestehende Release wurde ohne Neubau über die vorhandene Pipeline deployt:
+[erfolgreicher Deploy von v1.4.0](https://github.com/Philip222111/450-tictactest-mvk/actions/runs/45564097042).
+Die SSM-Runtime-Association meldete `Success`. Beide öffentlichen Versionsdateien
+lieferten `1.4.0`; vollständige PTY/WebSocket-Partien gegen Greedy und Perfect
+bestanden mit `scripts/check_terminal.py`. Die aktuelle öffentliche Arbeitsplatz-IP
+entsprach weiterhin der konfigurierten SSH-Freigabe mit `/32`.
+
+Die lokalen Credentials liegen ausserhalb des Repositories in
+`~/.aws/credentials`, Profil `learner-lab`. Für lokale OpenTofu-Aufrufe
+`$env:AWS_PROFILE = 'learner-lab'` setzen. Lab-Credentials laufen weiterhin ab
+und müssen dann lokal und in GitHub gemeinsam erneuert werden.
